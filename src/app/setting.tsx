@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -99,7 +100,13 @@ export default function SettingScreen() {
   };
 
   return (
-    <Screen title="Setting">
+    <Screen
+      title="Setting"
+      action={
+        <ThemedText type="small" themeColor="textSecondary">
+          {Constants.expoConfig?.version ?? ''}
+        </ThemedText>
+      }>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.field}>
