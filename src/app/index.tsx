@@ -10,9 +10,8 @@ import { TagPill } from '@/components/tag-pill';
 import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
 import { WordingCard } from '@/components/wording-card';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
-import { useTheme } from '@/hooks/use-theme';
 
 const COLUMNS = 2;
 const GRID_PADDING = Spacing.three;
@@ -24,14 +23,16 @@ type EditorState =
   | { mode: 'edit'; id: string; text: string };
 
 export default function WordingScreen() {
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { ready, items, settings, addItem, updateItem, deleteItem, pinItem, clearSuccessFlash } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [flashReset, setFlashReset] = useState(0);
-  const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
+
+  // const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
+  const addBarPaddingBottom = Spacing.two + insets.bottom;
+  const overlayClearance = 36 + Spacing.two + addBarPaddingBottom;
 
   const allTags = useMemo(() => {
     const seen = new Set<string>();
@@ -114,60 +115,66 @@ export default function WordingScreen() {
           ))}
         </View>
       ) : null}
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {!ready ? (
-          <ThemedText themeColor="textSecondary">Loading…</ThemedText>
-        ) : items.length === 0 ? (
-          <View style={styles.empty}>
-            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-              No wording items yet. Add one to start.
-            </ThemedText>
-          </View>
-        ) : visibleItems.length === 0 ? (
-          <View style={styles.empty}>
-            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-              No items with this tag.
-            </ThemedText>
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            {columns.map((column, columnIndex) => (
-              <View key={columnIndex} style={[styles.column, { width: cardWidth }]}>
-                {column.map((item) => (
-                  <WordingCard
-                    key={item.id}
-                    item={item}
-                    width={cardWidth}
-                    settings={settings}
-                    flashReset={flashReset}
-                    selectedTag={selectedTag}
-                    onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
-                    onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
-                    onPin={() => pinItem(item.id)}
-                    onDelete={() => deleteItem(item.id)}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+      <View style={styles.gridArea}>
+        <ScrollView
+          style={styles.gridScroll}
+          contentContainerStyle={[styles.content, { paddingBottom: overlayClearance }]}
+          keyboardShouldPersistTaps="handled">
+          {!ready ? (
+            <ThemedText themeColor="textSecondary">Loading…</ThemedText>
+          ) : items.length === 0 ? (
+            <View style={styles.empty}>
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                No wording items yet. Add one to start.
+              </ThemedText>
+            </View>
+          ) : visibleItems.length === 0 ? (
+            <View style={styles.empty}>
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                No items with this tag.
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {columns.map((column, columnIndex) => (
+                <View key={columnIndex} style={[styles.column, { width: cardWidth }]}>
+                  {column.map((item) => (
+                    <WordingCard
+                      key={item.id}
+                      item={item}
+                      width={cardWidth}
+                      settings={settings}
+                      flashReset={flashReset}
+                      selectedTag={selectedTag}
+                      onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
+                      onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
+                      onPin={() => pinItem(item.id)}
+                      onDelete={() => deleteItem(item.id)}
+                    />
+                  ))}
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
-      <View style={[styles.addBar, { paddingBottom: addBarPaddingBottom }]}>
-        <View style={styles.costSlot}>
-          <LastRequestCost />
+        <View pointerEvents="box-none" style={[styles.addBar, { paddingBottom: addBarPaddingBottom }]}>
+          <View style={styles.costSlot} pointerEvents="box-none">
+            <LastRequestCost />
+          </View>
+          <Pressable
+            onPress={() => setEditor({ mode: 'add' })}
+            style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
+            <Ionicons name="add" size={20} color="#ffffff" />
+          </Pressable>
         </View>
-        <Pressable
-          onPress={() => setEditor({ mode: 'add' })}
-          style={({ pressed }) => [styles.addButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
-          <Ionicons name="add" size={20} color={theme.text} />
-        </Pressable>
       </View>
 
       <TextEditorModal
         visible={editor.mode !== 'closed'}
         title={editor.mode === 'edit' ? 'Edit text' : 'Add wording'}
         initialValue={editor.mode === 'edit' ? editor.text : ''}
+        showPaste={editor.mode === 'add'}
         onClose={() => setEditor({ mode: 'closed' })}
         onSave={handleSave}
       />
@@ -184,11 +191,16 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.one,
   },
+  gridArea: {
+    flex: 1,
+  },
+  gridScroll: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: GRID_PADDING,
     paddingTop: GRID_PADDING,
-    paddingBottom: Spacing.three,
   },
   grid: {
     flexDirection: 'row',
@@ -199,6 +211,10 @@ const styles = StyleSheet.create({
     gap: GRID_GAP,
   },
   addBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: GRID_PADDING,
@@ -214,6 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#000000',
   },
   empty: {
     flex: 1,

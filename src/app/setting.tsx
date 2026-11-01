@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import { IconButton } from '@/components/icon-button';
-import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -224,9 +223,6 @@ export default function SettingScreen() {
             </Pressable>
           </View>
         </ScrollView>
-        <View style={styles.costBar}>
-          <LastRequestCost />
-        </View>
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -302,9 +298,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
-  },
-  costBar: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.two + BottomTabInset,
   },
 });

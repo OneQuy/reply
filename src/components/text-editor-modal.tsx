@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -17,11 +18,12 @@ type TextEditorModalProps = {
   visible: boolean;
   title: string;
   initialValue: string;
+  showPaste?: boolean;
   onClose: () => void;
   onSave: (text: string) => void;
 };
 
-export function TextEditorModal({ visible, title, initialValue, onClose, onSave }: TextEditorModalProps) {
+export function TextEditorModal({ visible, title, initialValue, showPaste = false, onClose, onSave }: TextEditorModalProps) {
   const theme = useTheme();
   const [value, setValue] = useState(initialValue);
 
@@ -32,6 +34,13 @@ export function TextEditorModal({ visible, title, initialValue, onClose, onSave 
   }, [initialValue, visible]);
 
   const canSave = value.trim().length > 0;
+
+  const handlePaste = async () => {
+    const text = (await Clipboard.getStringAsync()).trim();
+    if (text) {
+      setValue(text);
+    }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -56,15 +65,24 @@ export function TextEditorModal({ visible, title, initialValue, onClose, onSave 
             ]}
           />
           <View style={styles.actions}>
-            <Pressable onPress={onClose} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
-              <ThemedText themeColor="textSecondary">Cancel</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => onSave(value.trim())}
-              disabled={!canSave}
-              style={({ pressed }) => [styles.action, pressed && styles.pressed, !canSave && styles.disabled]}>
-              <ThemedText style={styles.saveLabel}>Save</ThemedText>
-            </Pressable>
+            {showPaste ? (
+              <Pressable onPress={() => void handlePaste()} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
+                <ThemedText style={styles.pasteLabel}>Paste</ThemedText>
+              </Pressable>
+            ) : (
+              <View />
+            )}
+            <View style={styles.actionGroup}>
+              <Pressable onPress={onClose} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
+                <ThemedText themeColor="textSecondary">Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => onSave(value.trim())}
+                disabled={!canSave}
+                style={({ pressed }) => [styles.action, pressed && styles.pressed, !canSave && styles.disabled]}>
+                <ThemedText style={styles.saveLabel}>Save</ThemedText>
+              </Pressable>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -98,12 +116,19 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  actionGroup: {
+    flexDirection: 'row',
     gap: Spacing.three,
   },
   action: {
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
+  },
+  pasteLabel: {
+    fontWeight: 700,
   },
   saveLabel: {
     color: '#2B7FFF',
