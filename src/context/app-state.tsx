@@ -18,7 +18,7 @@ type AppStateContextValue = {
   updateItemTags: (id: string, tags: string[]) => void;
   deleteItem: (id: string) => void;
   pinItem: (id: string) => void;
-  updateSettings: (settings: AppSettings) => void;
+  updateSettings: (settings: Partial<AppSettings>) => void;
   recordRequest: (request: LastRequest) => void;
   startSuccessFlash: (id: string, durationMs: number) => void;
   clearSuccessFlash: () => void;
@@ -97,9 +97,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [items, persistItems],
   );
 
-  const updateSettings = useCallback((next: AppSettings) => {
-    setSettings(next);
-    void saveSettings(next);
+  const updateSettings = useCallback((next: Partial<AppSettings>) => {
+    setSettings((current) => {
+      const merged = { ...current, ...next };
+      void saveSettings(merged);
+      return merged;
+    });
   }, []);
 
   const recordRequest = useCallback((request: LastRequest) => {

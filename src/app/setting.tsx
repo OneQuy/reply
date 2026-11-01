@@ -25,88 +25,85 @@ export default function SettingScreen() {
   const theme = useTheme();
   const scrollRef = useTabScrollToTop();
   const { settings, updateSettings } = useAppState();
-  const [model, setModel] = useState(settings.model);
-  const [models, setModels] = useState(settings.models ?? [settings.model]);
+  const models = settings.models?.length ? settings.models : [settings.model];
   const [newModel, setNewModel] = useState('');
   const [prompt, setPrompt] = useState(settings.prompt);
   const [replyPrompt, setReplyPrompt] = useState(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
   const [smoothPrompt, setSmoothPrompt] = useState(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
   const [flashSeconds, setFlashSeconds] = useState(String(settings.flashSeconds));
-  const [saved, setSaved] = useState(false);
+  const [flashSaved, setFlashSaved] = useState(false);
   const [editingPrompts, setEditingPrompts] = useState({
     wording: false,
     reply: false,
     smooth: false,
   });
 
-  const lockPrompts = () => setEditingPrompts({ wording: false, reply: false, smooth: false });
-
   useEffect(() => {
-    setModel(settings.model);
-    setModels(settings.models ?? [settings.model]);
-    setPrompt(settings.prompt);
-    setReplyPrompt(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
-    setSmoothPrompt(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(settings.flashSeconds));
-  }, [settings]);
+  }, [settings.flashSeconds]);
+
+  const handleSelectModel = (name: string) => {
+    if (name === settings.model) return;
+    updateSettings({ model: name });
+  };
 
   const handleAddModel = () => {
     const next = newModel.trim();
     if (!next) return;
-    if (!models.includes(next)) {
-      setModels((current) => [...current, next]);
-    }
-    setModel(next);
+    const nextModels = models.includes(next) ? models : [...models, next];
+    updateSettings({ models: nextModels, model: next });
     setNewModel('');
   };
 
   const handleRemoveModel = (name: string) => {
     if (models.length <= 1) return;
     const nextModels = models.filter((item) => item !== name);
-    setModels(nextModels);
-    if (model === name) {
-      setModel(nextModels[0]);
-    }
+    updateSettings({
+      models: nextModels,
+      model: settings.model === name ? nextModels[0] : settings.model,
+    });
   };
 
-  const handleSave = () => {
-    const nextModels = models.length ? models : DEFAULT_SETTINGS.models;
-    const nextModel = nextModels.includes(model) ? model : nextModels[0];
-    const nextPrompt = prompt.trim() || DEFAULT_SETTINGS.prompt;
-    const nextReplyPrompt = replyPrompt.trim() || DEFAULT_SETTINGS.replyPrompt;
-    const nextSmoothPrompt = smoothPrompt.trim() || DEFAULT_SETTINGS.smoothPrompt;
-    const nextFlashSeconds = parseFlashSeconds(flashSeconds);
-    updateSettings({
-      model: nextModel,
-      models: nextModels,
-      prompt: nextPrompt,
-      replyPrompt: nextReplyPrompt,
-      smoothPrompt: nextSmoothPrompt,
-      flashSeconds: nextFlashSeconds,
-    });
-    setModel(nextModel);
-    setModels(nextModels);
-    setPrompt(nextPrompt);
-    setReplyPrompt(nextReplyPrompt);
-    setSmoothPrompt(nextSmoothPrompt);
-    setFlashSeconds(String(nextFlashSeconds));
-    lockPrompts();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
+  const handleEditPrompt = (key: keyof typeof editingPrompts) => {
+    if (key === 'wording') setPrompt(settings.prompt);
+    if (key === 'reply') setReplyPrompt(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
+    if (key === 'smooth') setSmoothPrompt(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
+    setEditingPrompts((current) => ({ ...current, [key]: true }));
+  };
+
+  const handleSavePrompt = (key: keyof typeof editingPrompts) => {
+    if (key === 'wording') {
+      const next = prompt.trim() || DEFAULT_SETTINGS.prompt;
+      setPrompt(next);
+      updateSettings({ prompt: next });
+    } else if (key === 'reply') {
+      const next = replyPrompt.trim() || DEFAULT_SETTINGS.replyPrompt;
+      setReplyPrompt(next);
+      updateSettings({ replyPrompt: next });
+    } else {
+      const next = smoothPrompt.trim() || DEFAULT_SETTINGS.smoothPrompt;
+      setSmoothPrompt(next);
+      updateSettings({ smoothPrompt: next });
+    }
+    setEditingPrompts((current) => ({ ...current, [key]: false }));
+  };
+
+  const handleSaveFlash = () => {
+    const next = parseFlashSeconds(flashSeconds);
+    setFlashSeconds(String(next));
+    updateSettings({ flashSeconds: next });
+    setFlashSaved(true);
+    setTimeout(() => setFlashSaved(false), 1600);
   };
 
   const handleReset = () => {
-    setModel(DEFAULT_SETTINGS.model);
-    setModels(DEFAULT_SETTINGS.models);
     setNewModel('');
     setPrompt(DEFAULT_SETTINGS.prompt);
     setReplyPrompt(DEFAULT_SETTINGS.replyPrompt);
     setSmoothPrompt(DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(DEFAULT_SETTINGS.flashSeconds));
+    setEditingPrompts({ wording: false, reply: false, smooth: false });
     updateSettings(DEFAULT_SETTINGS);
-    lockPrompts();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
   };
 
   return (
@@ -123,11 +120,11 @@ export default function SettingScreen() {
             <ThemedText type="smallBold">Model</ThemedText>
             <View style={styles.modelList}>
               {models.map((name) => {
-                const selected = name === model;
+                const selected = name === settings.model;
                 return (
                   <Pressable
                     key={name}
-                    onPress={() => setModel(name)}
+                    onPress={() => handleSelectModel(name)}
                     style={({ pressed }) => [
                       styles.modelRow,
                       { backgroundColor: theme.backgroundElement },
@@ -168,33 +165,46 @@ export default function SettingScreen() {
 
           <PromptField
             label="Wording prompt"
-            value={prompt}
+            value={editingPrompts.wording ? prompt : settings.prompt}
             onChangeText={setPrompt}
             placeholder={DEFAULT_SETTINGS.prompt}
             editing={editingPrompts.wording}
-            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, wording: !current.wording }))}
+            onEdit={() => handleEditPrompt('wording')}
+            onSave={() => handleSavePrompt('wording')}
           />
 
           <PromptField
             label="Reply prompt"
-            value={replyPrompt}
+            value={editingPrompts.reply ? replyPrompt : (settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt)}
             onChangeText={setReplyPrompt}
             placeholder={DEFAULT_SETTINGS.replyPrompt}
             editing={editingPrompts.reply}
-            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, reply: !current.reply }))}
+            onEdit={() => handleEditPrompt('reply')}
+            onSave={() => handleSavePrompt('reply')}
           />
 
           <PromptField
             label="Smooth prompt"
-            value={smoothPrompt}
+            value={editingPrompts.smooth ? smoothPrompt : (settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt)}
             onChangeText={setSmoothPrompt}
             placeholder={DEFAULT_SETTINGS.smoothPrompt}
             editing={editingPrompts.smooth}
-            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, smooth: !current.smooth }))}
+            onEdit={() => handleEditPrompt('smooth')}
+            onSave={() => handleSavePrompt('smooth')}
           />
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Flash time (seconds)</ThemedText>
+            <View style={styles.fieldHeader}>
+              <ThemedText type="smallBold">Flash time (seconds)</ThemedText>
+              <Pressable
+                onPress={handleSaveFlash}
+                hitSlop={6}
+                style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+                <ThemedText type="small" style={flashSaved ? styles.savedLabel : undefined}>
+                  {flashSaved ? 'Saved' : 'Save'}
+                </ThemedText>
+              </Pressable>
+            </View>
             <TextInput
               value={flashSeconds}
               onChangeText={setFlashSeconds}
@@ -205,22 +215,11 @@ export default function SettingScreen() {
             />
           </View>
 
-          <View style={styles.actions}>
-            <Pressable
-              onPress={handleSave}
-              style={({ pressed }) => [
-                styles.button,
-                { backgroundColor: saved ? '#22C55E' : theme.backgroundSelected },
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText style={saved ? styles.savedLabel : undefined}>{saved ? 'Saved' : 'Save'}</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={handleReset}
-              style={({ pressed }) => [styles.button, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
-              <ThemedText themeColor="textSecondary">Reset defaults</ThemedText>
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={handleReset}
+            style={({ pressed }) => [styles.button, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+            <ThemedText themeColor="textSecondary">Reset defaults</ThemedText>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -233,10 +232,11 @@ type PromptFieldProps = {
   onChangeText: (text: string) => void;
   placeholder: string;
   editing: boolean;
-  onToggleEdit: () => void;
+  onEdit: () => void;
+  onSave: () => void;
 };
 
-function PromptField({ label, value, onChangeText, placeholder, editing, onToggleEdit }: PromptFieldProps) {
+function PromptField({ label, value, onChangeText, placeholder, editing, onEdit, onSave }: PromptFieldProps) {
   const theme = useTheme();
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
@@ -252,7 +252,10 @@ function PromptField({ label, value, onChangeText, placeholder, editing, onToggl
     <View style={styles.field}>
       <View style={styles.fieldHeader}>
         <ThemedText type="smallBold">{label}</ThemedText>
-        <Pressable onPress={onToggleEdit} hitSlop={6} style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+        <Pressable
+          onPress={editing ? onSave : onEdit}
+          hitSlop={6}
+          style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
           <Ionicons name={editing ? 'checkmark' : 'pencil-outline'} size={14} color={theme.text} />
           <ThemedText type="small">{editing ? 'Done' : 'Edit'}</ThemedText>
         </Pressable>
@@ -348,9 +351,6 @@ const styles = StyleSheet.create({
   prompt: {
     minHeight: 160,
   },
-  actions: {
-    gap: Spacing.two,
-  },
   button: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   savedLabel: {
-    color: '#0B1B0E',
+    color: '#16A34A',
     fontWeight: 700,
   },
   pressed: {
