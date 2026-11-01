@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { useEffect, useState } from 'react';
+import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -31,6 +31,13 @@ export default function SettingScreen() {
   const [smoothPrompt, setSmoothPrompt] = useState(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
   const [flashSeconds, setFlashSeconds] = useState(String(settings.flashSeconds));
   const [saved, setSaved] = useState(false);
+  const [editingPrompts, setEditingPrompts] = useState({
+    wording: false,
+    reply: false,
+    smooth: false,
+  });
+
+  const lockPrompts = () => setEditingPrompts({ wording: false, reply: false, smooth: false });
 
   useEffect(() => {
     setModel(settings.model);
@@ -81,6 +88,7 @@ export default function SettingScreen() {
     setReplyPrompt(nextReplyPrompt);
     setSmoothPrompt(nextSmoothPrompt);
     setFlashSeconds(String(nextFlashSeconds));
+    lockPrompts();
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -94,6 +102,7 @@ export default function SettingScreen() {
     setSmoothPrompt(DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(DEFAULT_SETTINGS.flashSeconds));
     updateSettings(DEFAULT_SETTINGS);
+    lockPrompts();
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -155,44 +164,32 @@ export default function SettingScreen() {
             </View>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Wording prompt</ThemedText>
-            <TextInput
-              value={prompt}
-              onChangeText={setPrompt}
-              multiline
-              textAlignVertical="top"
-              placeholder={DEFAULT_SETTINGS.prompt}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            />
-          </View>
+          <PromptField
+            label="Wording prompt"
+            value={prompt}
+            onChangeText={setPrompt}
+            placeholder={DEFAULT_SETTINGS.prompt}
+            editing={editingPrompts.wording}
+            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, wording: !current.wording }))}
+          />
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Reply prompt</ThemedText>
-            <TextInput
-              value={replyPrompt}
-              onChangeText={setReplyPrompt}
-              multiline
-              textAlignVertical="top"
-              placeholder={DEFAULT_SETTINGS.replyPrompt}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            />
-          </View>
+          <PromptField
+            label="Reply prompt"
+            value={replyPrompt}
+            onChangeText={setReplyPrompt}
+            placeholder={DEFAULT_SETTINGS.replyPrompt}
+            editing={editingPrompts.reply}
+            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, reply: !current.reply }))}
+          />
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Smooth prompt</ThemedText>
-            <TextInput
-              value={smoothPrompt}
-              onChangeText={setSmoothPrompt}
-              multiline
-              textAlignVertical="top"
-              placeholder={DEFAULT_SETTINGS.smoothPrompt}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            />
-          </View>
+          <PromptField
+            label="Smooth prompt"
+            value={smoothPrompt}
+            onChangeText={setSmoothPrompt}
+            placeholder={DEFAULT_SETTINGS.smoothPrompt}
+            editing={editingPrompts.smooth}
+            onToggleEdit={() => setEditingPrompts((current) => ({ ...current, smooth: !current.smooth }))}
+          />
 
           <View style={styles.field}>
             <ThemedText type="smallBold">Flash time (seconds)</ThemedText>
@@ -228,6 +225,59 @@ export default function SettingScreen() {
   );
 }
 
+type PromptFieldProps = {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  editing: boolean;
+  onToggleEdit: () => void;
+};
+
+function PromptField({ label, value, onChangeText, placeholder, editing, onToggleEdit }: PromptFieldProps) {
+  const theme = useTheme();
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      return;
+    }
+    inputRef.current?.blur();
+  }, [editing]);
+
+  return (
+    <View style={styles.field}>
+      <View style={styles.fieldHeader}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+        <Pressable onPress={onToggleEdit} hitSlop={6} style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+          <Ionicons name={editing ? 'checkmark' : 'pencil-outline'} size={14} color={theme.text} />
+          <ThemedText type="small">{editing ? 'Done' : 'Edit'}</ThemedText>
+        </Pressable>
+      </View>
+      <TextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={onChangeText}
+        multiline
+        editable={editing}
+        textAlignVertical="top"
+        placeholder={placeholder}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.input,
+          styles.prompt,
+          {
+            color: theme.text,
+            backgroundColor: theme.backgroundElement,
+            opacity: editing ? 1 : 0.7,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
@@ -239,6 +289,19 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: Spacing.two,
+  },
+  fieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
   },
   modelList: {
     gap: Spacing.one,
