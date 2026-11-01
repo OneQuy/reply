@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
+import { TagPill } from '@/components/tag-pill';
 import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
 import { WordingCard } from '@/components/wording-card';
@@ -26,14 +27,41 @@ export default function WordingScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { ready, items, settings, addItem, updateItem, deleteItem, pinItem } = useAppState();
+  const { ready, items, settings, addItem, updateItem, deleteItem, pinItem, clearSuccessFlash } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [flashReset, setFlashReset] = useState(0);
   const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
 
+  const allTags = useMemo(() => {
+    const seen = new Set<string>();
+    const tags: string[] = [];
+    for (const item of items) {
+      for (const tag of item.tags ?? []) {
+        const key = tag.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        tags.push(tag);
+      }
+    }
+    return tags.sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  useEffect(() => {
+    if (selectedTag && !allTags.some((tag) => tag.toLowerCase() === selectedTag.toLowerCase())) {
+      setSelectedTag(null);
+    }
+  }, [allTags, selectedTag]);
+
+  const visibleItems = useMemo(() => {
+    if (!selectedTag) return items;
+    return items.filter((item) => (item.tags ?? []).some((tag) => tag.toLowerCase() === selectedTag.toLowerCase()));
+  }, [items, selectedTag]);
+
   const clearFlashes = useCallback(() => {
     setFlashReset((value) => value + 1);
-  }, []);
+    clearSuccessFlash();
+  }, [clearSuccessFlash]);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,6 +94,18 @@ export default function WordingScreen() {
 
   return (
     <Screen>
+      {allTags.length > 0 ? (
+        <View style={styles.filterBar}>
+          {allTags.map((tag) => (
+            <TagPill
+              key={tag}
+              label={tag}
+              selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+              onPress={() => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
+            />
+          ))}
+        </View>
+      ) : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {!ready ? (
           <ThemedText themeColor="textSecondary">Loading…</ThemedText>
@@ -75,15 +115,23 @@ export default function WordingScreen() {
               No wording items yet. Add one to start.
             </ThemedText>
           </View>
+        ) : visibleItems.length === 0 ? (
+          <View style={styles.empty}>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+              No items with this tag.
+            </ThemedText>
+          </View>
         ) : (
           <View style={styles.grid}>
-            {items.map((item) => (
+            {visibleItems.map((item) => (
               <WordingCard
                 key={item.id}
                 item={item}
                 width={cardWidth}
                 settings={settings}
                 flashReset={flashReset}
+                selectedTag={selectedTag}
+                onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
                 onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
                 onPin={() => pinItem(item.id)}
                 onDelete={() => deleteItem(item.id)}
@@ -116,6 +164,14 @@ export default function WordingScreen() {
 }
 
 const styles = StyleSheet.create({
+  filterBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.one,
+    paddingHorizontal: GRID_PADDING,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.one,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: GRID_PADDING,
@@ -125,6 +181,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'flex-start',
     gap: GRID_GAP,
   },
   addBar: {

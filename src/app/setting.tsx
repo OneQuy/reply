@@ -28,6 +28,7 @@ export default function SettingScreen() {
   const [newModel, setNewModel] = useState('');
   const [prompt, setPrompt] = useState(settings.prompt);
   const [replyPrompt, setReplyPrompt] = useState(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
+  const [smoothPrompt, setSmoothPrompt] = useState(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
   const [flashSeconds, setFlashSeconds] = useState(String(settings.flashSeconds));
   const [saved, setSaved] = useState(false);
 
@@ -36,6 +37,7 @@ export default function SettingScreen() {
     setModels(settings.models ?? [settings.model]);
     setPrompt(settings.prompt);
     setReplyPrompt(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
+    setSmoothPrompt(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(settings.flashSeconds));
   }, [settings]);
 
@@ -63,18 +65,21 @@ export default function SettingScreen() {
     const nextModel = nextModels.includes(model) ? model : nextModels[0];
     const nextPrompt = prompt.trim() || DEFAULT_SETTINGS.prompt;
     const nextReplyPrompt = replyPrompt.trim() || DEFAULT_SETTINGS.replyPrompt;
+    const nextSmoothPrompt = smoothPrompt.trim() || DEFAULT_SETTINGS.smoothPrompt;
     const nextFlashSeconds = parseFlashSeconds(flashSeconds);
     updateSettings({
       model: nextModel,
       models: nextModels,
       prompt: nextPrompt,
       replyPrompt: nextReplyPrompt,
+      smoothPrompt: nextSmoothPrompt,
       flashSeconds: nextFlashSeconds,
     });
     setModel(nextModel);
     setModels(nextModels);
     setPrompt(nextPrompt);
     setReplyPrompt(nextReplyPrompt);
+    setSmoothPrompt(nextSmoothPrompt);
     setFlashSeconds(String(nextFlashSeconds));
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
@@ -86,6 +91,7 @@ export default function SettingScreen() {
     setNewModel('');
     setPrompt(DEFAULT_SETTINGS.prompt);
     setReplyPrompt(DEFAULT_SETTINGS.replyPrompt);
+    setSmoothPrompt(DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(DEFAULT_SETTINGS.flashSeconds));
     updateSettings(DEFAULT_SETTINGS);
     setSaved(true);
@@ -164,6 +170,19 @@ export default function SettingScreen() {
               multiline
               textAlignVertical="top"
               placeholder={DEFAULT_SETTINGS.replyPrompt}
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText type="smallBold">Smooth prompt</ThemedText>
+            <TextInput
+              value={smoothPrompt}
+              onChangeText={setSmoothPrompt}
+              multiline
+              textAlignVertical="top"
+              placeholder={DEFAULT_SETTINGS.smoothPrompt}
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             />

@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { loadItems, loadSettings, saveItems, saveSettings } from '@/lib/storage';
+import { loadItems, loadSettings, normalizeTags, saveItems, saveSettings } from '@/lib/storage';
 import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/app';
 
 export type LastRequest = {
@@ -12,12 +12,16 @@ type AppStateContextValue = {
   items: WordingItem[];
   settings: AppSettings;
   lastRequest: LastRequest | null;
-  addItem: (text: string) => void;
+  successFlashId: string | null;
+  addItem: (text: string, tags?: string[]) => void;
   updateItem: (id: string, text: string) => void;
+  updateItemTags: (id: string, tags: string[]) => void;
   deleteItem: (id: string) => void;
   pinItem: (id: string) => void;
   updateSettings: (settings: AppSettings) => void;
   recordRequest: (request: LastRequest) => void;
+  startSuccessFlash: (id: string, durationMs: number) => void;
+  clearSuccessFlash: () => void;
 };
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
@@ -31,6 +35,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<WordingItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [lastRequest, setLastRequest] = useState<LastRequest | null>(null);
+  const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
+  const successFlashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,8 +61,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback(
-    (text: string) => {
-      persistItems([...items, { id: createId(), text }]);
+    (text: string, tags: string[] = []) => {
+      persistItems([...items, { id: createId(), text, tags: normalizeTags(tags) }]);
     },
     [items, persistItems],
   );
@@ -64,6 +70,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const updateItem = useCallback(
     (id: string, text: string) => {
       persistItems(items.map((item) => (item.id === id ? { ...item, text } : item)));
+    },
+    [items, persistItems],
+  );
+
+  const updateItemTags = useCallback(
+    (id: string, tags: string[]) => {
+      persistItems(items.map((item) => (item.id === id ? { ...item, tags: normalizeTags(tags) } : item)));
     },
     [items, persistItems],
   );
@@ -93,20 +106,61 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setLastRequest(request);
   }, []);
 
+  const clearSuccessFlash = useCallback(() => {
+    if (successFlashTimeout.current) {
+      clearTimeout(successFlashTimeout.current);
+      successFlashTimeout.current = null;
+    }
+    setSuccessFlashId(null);
+  }, []);
+
+  const startSuccessFlash = useCallback(
+    (id: string, durationMs: number) => {
+      if (successFlashTimeout.current) {
+        clearTimeout(successFlashTimeout.current);
+      }
+      setSuccessFlashId(id);
+      successFlashTimeout.current = setTimeout(() => {
+        setSuccessFlashId(null);
+        successFlashTimeout.current = null;
+      }, durationMs);
+    },
+    [],
+  );
+
   const value = useMemo(
     () => ({
       ready,
       items,
       settings,
       lastRequest,
+      successFlashId,
       addItem,
       updateItem,
+      updateItemTags,
       deleteItem,
       pinItem,
       updateSettings,
       recordRequest,
+      startSuccessFlash,
+      clearSuccessFlash,
     }),
-    [ready, items, settings, lastRequest, addItem, updateItem, deleteItem, pinItem, updateSettings, recordRequest],
+    [
+      ready,
+      items,
+      settings,
+      lastRequest,
+      successFlashId,
+      addItem,
+      updateItem,
+      updateItemTags,
+      deleteItem,
+      pinItem,
+      updateSettings,
+      recordRequest,
+      startSuccessFlash,
+      clearSuccessFlash,
+    ],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

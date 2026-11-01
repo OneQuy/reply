@@ -12,7 +12,9 @@ export async function loadItems(): Promise<WordingItem[]> {
   try {
     const parsed = JSON.parse(raw) as WordingItem[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string');
+    return parsed
+      .filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string')
+      .map((item) => ({ id: item.id, text: item.text, tags: normalizeTags(item.tags) }));
   } catch {
     return [];
   }
@@ -37,6 +39,10 @@ export async function loadSettings(): Promise<AppSettings> {
         typeof parsed.replyPrompt === 'string' && parsed.replyPrompt.trim()
           ? parsed.replyPrompt
           : DEFAULT_SETTINGS.replyPrompt,
+      smoothPrompt:
+        typeof parsed.smoothPrompt === 'string' && parsed.smoothPrompt.trim()
+          ? parsed.smoothPrompt
+          : DEFAULT_SETTINGS.smoothPrompt,
       flashSeconds: parseFlashSeconds(parsed.flashSeconds),
     };
   } catch {
@@ -54,6 +60,22 @@ export function parseFlashSeconds(value: unknown): number {
     return DEFAULT_SETTINGS.flashSeconds;
   }
   return Math.round(parsed);
+}
+
+export function normalizeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string') continue;
+    const tag = entry.trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+  }
+  return tags;
 }
 
 export function parseModels(value: Partial<Pick<AppSettings, 'model' | 'models'>>): { model: string; models: string[] } {
