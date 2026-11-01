@@ -23,7 +23,12 @@ function cleanResult(text: string): string {
     .trim();
 }
 
-export async function wordingText(text: string, model: string, prompt: string): Promise<string> {
+export type CompletionResult = {
+  text: string;
+  cost: number | null;
+};
+
+export async function wordingText(text: string, model: string, prompt: string): Promise<CompletionResult> {
   const apiKey = getOpenRouterApiKey();
   if (!apiKey) {
     throw new Error('Missing OpenRouter API key');
@@ -37,6 +42,7 @@ export async function wordingText(text: string, model: string, prompt: string): 
     },
     body: JSON.stringify({
       model,
+      usage: { include: true },
       messages: [
         {
           role: 'user',
@@ -52,11 +58,13 @@ export async function wordingText(text: string, model: string, prompt: string): 
 
   const data = (await response.json()) as {
     choices?: { message?: { content?: string } }[];
+    usage?: { cost?: number };
   };
   const result = data.choices?.[0]?.message?.content;
   if (!result?.trim()) {
     throw new Error('Empty wording result');
   }
 
-  return cleanResult(result);
+  const cost = typeof data.usage?.cost === 'number' && Number.isFinite(data.usage.cost) ? data.usage.cost : null;
+  return { text: cleanResult(result), cost };
 }

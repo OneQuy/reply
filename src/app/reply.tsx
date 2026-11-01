@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -19,7 +20,7 @@ export default function ReplyScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const { settings } = useAppState();
+  const { settings, recordRequest } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
@@ -81,8 +82,9 @@ export default function ReplyScreen() {
         settings.model,
         settings.replyPrompt || DEFAULT_SETTINGS.replyPrompt,
       );
-      await Clipboard.setStringAsync(nextResult);
-      setResult(nextResult);
+      await Clipboard.setStringAsync(nextResult.text);
+      recordRequest({ cost: nextResult.cost });
+      setResult(nextResult.text);
       flashFor('success', settings.flashSeconds * 1000);
     } catch {
       flashFor('error', 1600);
@@ -124,7 +126,9 @@ export default function ReplyScreen() {
           )}
         </Pressable>
 
-        <View style={styles.bottomSpacer} />
+        <View style={styles.bottomSpacer}>
+          <LastRequestCost />
+        </View>
       </View>
     </Screen>
   );
@@ -158,6 +162,7 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
   resultText: {
     fontSize: 22,

@@ -6,6 +6,7 @@ import { IconButton } from '@/components/icon-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAppState } from '@/context/app-state';
 import { wordingText } from '@/lib/openrouter';
 import { type AppSettings, type WordingItem } from '@/types/app';
 
@@ -23,6 +24,7 @@ type WordingCardProps = {
 
 export function WordingCard({ item, width, settings, flashReset, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
+  const { recordRequest } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,7 +70,8 @@ export function WordingCard({ item, width, settings, flashReset, onEdit, onPin, 
     setLoading(true);
     try {
       const result = await wordingText(item.text, settings.model, settings.prompt);
-      await Clipboard.setStringAsync(result);
+      await Clipboard.setStringAsync(result.text);
+      recordRequest({ cost: result.cost });
       flashFor('success', settings.flashSeconds * 1000);
     } catch {
       flashFor('error', 1600);

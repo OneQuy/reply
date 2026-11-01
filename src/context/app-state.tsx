@@ -3,15 +3,21 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { loadItems, loadSettings, saveItems, saveSettings } from '@/lib/storage';
 import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/app';
 
+export type LastRequest = {
+  cost: number | null;
+};
+
 type AppStateContextValue = {
   ready: boolean;
   items: WordingItem[];
   settings: AppSettings;
+  lastRequest: LastRequest | null;
   addItem: (text: string) => void;
   updateItem: (id: string, text: string) => void;
   deleteItem: (id: string) => void;
   pinItem: (id: string) => void;
   updateSettings: (settings: AppSettings) => void;
+  recordRequest: (request: LastRequest) => void;
 };
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
@@ -24,6 +30,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [items, setItems] = useState<WordingItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [lastRequest, setLastRequest] = useState<LastRequest | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,18 +89,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     void saveSettings(next);
   }, []);
 
+  const recordRequest = useCallback((request: LastRequest) => {
+    setLastRequest(request);
+  }, []);
+
   const value = useMemo(
     () => ({
       ready,
       items,
       settings,
+      lastRequest,
       addItem,
       updateItem,
       deleteItem,
       pinItem,
       updateSettings,
+      recordRequest,
     }),
-    [ready, items, settings, addItem, updateItem, deleteItem, pinItem, updateSettings],
+    [ready, items, settings, lastRequest, addItem, updateItem, deleteItem, pinItem, updateSettings, recordRequest],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

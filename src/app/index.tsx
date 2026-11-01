@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
 import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
@@ -28,7 +29,7 @@ export default function WordingScreen() {
   const { ready, items, settings, addItem, updateItem, deleteItem, pinItem } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [flashReset, setFlashReset] = useState(0);
-  const addBarPaddingBottom = Spacing.three + BottomTabInset + insets.bottom;
+  const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
 
   const clearFlashes = useCallback(() => {
     setFlashReset((value) => value + 1);
@@ -93,6 +94,9 @@ export default function WordingScreen() {
       </ScrollView>
 
       <View style={[styles.addBar, { paddingBottom: addBarPaddingBottom }]}>
+        <View style={styles.costSlot}>
+          <LastRequestCost />
+        </View>
         <Pressable
           onPress={() => setEditor({ mode: 'add' })}
           style={({ pressed }) => [styles.addButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
@@ -124,9 +128,14 @@ const styles = StyleSheet.create({
     gap: GRID_GAP,
   },
   addBar: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: GRID_PADDING,
     paddingTop: Spacing.two,
+    gap: Spacing.two,
+  },
+  costSlot: {
+    flex: 1,
   },
   addButton: {
     width: 36,
