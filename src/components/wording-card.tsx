@@ -15,16 +15,25 @@ type WordingCardProps = {
   item: WordingItem;
   width: number;
   settings: AppSettings;
+  flashReset: number;
   onEdit: () => void;
   onPin: () => void;
   onDelete: () => void;
 };
 
-export function WordingCard({ item, width, settings, onEdit, onPin, onDelete }: WordingCardProps) {
+export function WordingCard({ item, width, settings, flashReset, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFlash = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setFlash('idle');
+  };
 
   useEffect(() => {
     return () => {
@@ -33,6 +42,15 @@ export function WordingCard({ item, width, settings, onEdit, onPin, onDelete }: 
       }
     };
   }, []);
+
+  const initialReset = useRef(true);
+  useEffect(() => {
+    if (initialReset.current) {
+      initialReset.current = false;
+      return;
+    }
+    clearFlash();
+  }, [flashReset]);
 
   const flashFor = (state: FlashState, duration: number) => {
     if (timeoutRef.current) {
@@ -51,7 +69,7 @@ export function WordingCard({ item, width, settings, onEdit, onPin, onDelete }: 
     try {
       const result = await wordingText(item.text, settings.model, settings.prompt);
       await Clipboard.setStringAsync(result);
-      flashFor('success', 5000);
+      flashFor('success', settings.flashSeconds * 1000);
     } catch {
       flashFor('error', 1600);
     } finally {
@@ -65,7 +83,7 @@ export function WordingCard({ item, width, settings, onEdit, onPin, onDelete }: 
 
   return (
     <View style={[styles.card, { width, backgroundColor }]}>
-      <ThemedText numberOfLines={4} style={[styles.text, { color: textColor }]}>
+      <ThemedText numberOfLines={9} style={[styles.text, { color: textColor }]}>
         {item.text}
       </ThemedText>
       <View style={styles.actions}>
@@ -80,15 +98,15 @@ export function WordingCard({ item, width, settings, onEdit, onPin, onDelete }: 
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 132,
+    minHeight: 180,
     borderRadius: 14,
     padding: Spacing.two,
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
   text: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: 500,
   },
   actions: {

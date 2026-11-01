@@ -7,19 +7,23 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
 type ScreenProps = {
-  title: string;
+  title?: string;
   action?: ReactNode;
   children: ReactNode;
 };
 
 export function Screen({ title, action, children }: ScreenProps) {
+  const showHeader = Boolean(title || action);
+
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-          <ThemedText style={styles.title}>{title}</ThemedText>
-          {action}
-        </View>
+        {showHeader ? (
+          <View style={styles.header}>
+            {title ? <ThemedText style={styles.title}>{title}</ThemedText> : null}
+            {action}
+          </View>
+        ) : null}
         <View style={styles.body}>{children}</View>
       </SafeAreaView>
     </ThemedView>
