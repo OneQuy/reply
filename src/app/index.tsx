@@ -58,6 +58,14 @@ export default function WordingScreen() {
     return items.filter((item) => (item.tags ?? []).some((tag) => tag.toLowerCase() === selectedTag.toLowerCase()));
   }, [items, selectedTag]);
 
+  const columns = useMemo(() => {
+    const next: (typeof visibleItems)[] = Array.from({ length: COLUMNS }, () => []);
+    visibleItems.forEach((item, index) => {
+      next[index % COLUMNS].push(item);
+    });
+    return next;
+  }, [visibleItems]);
+
   const clearFlashes = useCallback(() => {
     setFlashReset((value) => value + 1);
     clearSuccessFlash();
@@ -123,19 +131,23 @@ export default function WordingScreen() {
           </View>
         ) : (
           <View style={styles.grid}>
-            {visibleItems.map((item) => (
-              <WordingCard
-                key={item.id}
-                item={item}
-                width={cardWidth}
-                settings={settings}
-                flashReset={flashReset}
-                selectedTag={selectedTag}
-                onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
-                onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
-                onPin={() => pinItem(item.id)}
-                onDelete={() => deleteItem(item.id)}
-              />
+            {columns.map((column, columnIndex) => (
+              <View key={columnIndex} style={[styles.column, { width: cardWidth }]}>
+                {column.map((item) => (
+                  <WordingCard
+                    key={item.id}
+                    item={item}
+                    width={cardWidth}
+                    settings={settings}
+                    flashReset={flashReset}
+                    selectedTag={selectedTag}
+                    onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
+                    onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
+                    onPin={() => pinItem(item.id)}
+                    onDelete={() => deleteItem(item.id)}
+                  />
+                ))}
+              </View>
             ))}
           </View>
         )}
@@ -180,8 +192,10 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'flex-start',
+    gap: GRID_GAP,
+  },
+  column: {
     gap: GRID_GAP,
   },
   addBar: {
