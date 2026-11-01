@@ -1,98 +1,130 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { Screen } from '@/components/screen';
+import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { WordingCard } from '@/components/wording-card';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useAppState } from '@/context/app-state';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const COLUMNS = 3;
+const GRID_PADDING = Spacing.three;
+const GRID_GAP = Spacing.two;
+
+type EditorState =
+  | { mode: 'closed' }
+  | { mode: 'add' }
+  | { mode: 'edit'; id: string; text: string };
+
+export default function WordingScreen() {
+  const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const { ready, items, settings, addItem, updateItem, deleteItem, pinItem } = useAppState();
+  const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
+
+  const cardWidth = useMemo(() => {
+    const available = width - GRID_PADDING * 2 - GRID_GAP * (COLUMNS - 1);
+    return Math.floor(available / COLUMNS);
+  }, [width]);
+
+  const handleSave = (text: string) => {
+    if (editor.mode === 'add') {
+      addItem(text);
+    } else if (editor.mode === 'edit') {
+      updateItem(editor.id, text);
+    }
+    setEditor({ mode: 'closed' });
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <Screen
+      title="Wording"
+      action={
+        <Pressable
+          onPress={() => setEditor({ mode: 'add' })}
+          style={({ pressed }) => [styles.addButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+          <Ionicons name="add" size={20} color={theme.text} />
+        </Pressable>
+      }>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {!ready ? (
+          <ThemedText themeColor="textSecondary">Loading…</ThemedText>
+        ) : items.length === 0 ? (
+          <View style={styles.empty}>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+              No wording items yet. Add one to start.
+            </ThemedText>
+            <Pressable
+              onPress={() => setEditor({ mode: 'add' })}
+              style={({ pressed }) => [styles.emptyButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+              <ThemedText>Add item</ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {items.map((item) => (
+              <WordingCard
+                key={item.id}
+                item={item}
+                width={cardWidth}
+                settings={settings}
+                onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
+                onPin={() => pinItem(item.id)}
+                onDelete={() => deleteItem(item.id)}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <TextEditorModal
+        visible={editor.mode !== 'closed'}
+        title={editor.mode === 'edit' ? 'Edit text' : 'Add wording'}
+        initialValue={editor.mode === 'edit' ? editor.text : ''}
+        onClose={() => setEditor({ mode: 'closed' })}
+        onSave={handleSave}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: GRID_PADDING,
+    paddingBottom: Spacing.five + BottomTabInset,
+  },
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GRID_GAP,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.three,
+    paddingVertical: Spacing.six,
+  },
+  emptyText: {
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
+  emptyButton: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: 999,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  pressed: {
+    opacity: 0.7,
   },
 });
