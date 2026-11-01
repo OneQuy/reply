@@ -14,7 +14,12 @@ export async function loadItems(): Promise<WordingItem[]> {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string')
-      .map((item) => ({ id: item.id, text: item.text, tags: normalizeTags(item.tags) }));
+      .map((item) => ({
+        id: item.id,
+        text: item.text,
+        tags: normalizeTags(item.tags),
+        folded: item.folded === true,
+      }));
   } catch {
     return [];
   }

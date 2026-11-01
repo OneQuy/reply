@@ -16,6 +16,7 @@ type AppStateContextValue = {
   addItem: (text: string, tags?: string[]) => void;
   updateItem: (id: string, text: string) => void;
   updateItemTags: (id: string, tags: string[]) => void;
+  setItemFolded: (id: string, folded: boolean) => void;
   deleteItem: (id: string) => void;
   pinItem: (id: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
@@ -62,7 +63,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback(
     (text: string, tags: string[] = []) => {
-      persistItems([...items, { id: createId(), text, tags: normalizeTags(tags) }]);
+      persistItems([...items, { id: createId(), text, tags: normalizeTags(tags), folded: false }]);
     },
     [items, persistItems],
   );
@@ -77,6 +78,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const updateItemTags = useCallback(
     (id: string, tags: string[]) => {
       persistItems(items.map((item) => (item.id === id ? { ...item, tags: normalizeTags(tags) } : item)));
+    },
+    [items, persistItems],
+  );
+
+  const setItemFolded = useCallback(
+    (id: string, folded: boolean) => {
+      persistItems(items.map((item) => (item.id === id ? { ...item, folded } : item)));
     },
     [items, persistItems],
   );
@@ -141,6 +149,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       addItem,
       updateItem,
       updateItemTags,
+      setItemFolded,
       deleteItem,
       pinItem,
       updateSettings,
@@ -157,6 +166,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       addItem,
       updateItem,
       updateItemTags,
+      setItemFolded,
       deleteItem,
       pinItem,
       updateSettings,

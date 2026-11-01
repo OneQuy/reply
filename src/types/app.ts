@@ -2,6 +2,7 @@ export type WordingItem = {
   id: string;
   text: string;
   tags: string[];
+  folded?: boolean;
 };
 
 export type AppSettings = {

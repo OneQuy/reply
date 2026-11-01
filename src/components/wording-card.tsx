@@ -29,10 +29,11 @@ type WordingCardProps = {
 
 export function WordingCard({ item, width, settings, flashReset, selectedTag, onTagPress, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
-  const { recordRequest, updateItemTags, successFlashId, startSuccessFlash, clearSuccessFlash } = useAppState();
+  const { recordRequest, updateItemTags, setItemFolded, successFlashId, startSuccessFlash, clearSuccessFlash } = useAppState();
   const [errorFlash, setErrorFlash] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
+  const [lineCount, setLineCount] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -86,15 +87,38 @@ export function WordingCard({ item, width, settings, flashReset, selectedTag, on
     }
   };
 
+  const handleToggleFold = () => {
+    if (item.folded) {
+      setItemFolded(item.id, false);
+      return;
+    }
+    if (lineCount > 2) {
+      setItemFolded(item.id, true);
+    }
+  };
+
   const tags = item.tags ?? [];
   const flash: FlashState = errorFlash ? 'error' : successFlashId === item.id ? 'success' : 'idle';
   const backgroundColor =
     flash === 'success' ? '#22C55E' : flash === 'error' ? '#F87171' : theme.backgroundElement;
   const textColor = flash === 'idle' ? theme.text : '#0B1B0E';
+  const folded = item.folded === true;
 
   return (
     <View style={[styles.card, { width, backgroundColor }]}>
-      <ThemedText style={[styles.text, { color: textColor }]}>{item.text}</ThemedText>
+      <Pressable onPress={handleToggleFold}>
+        <ThemedText
+          style={[styles.text, { color: textColor }]}
+          numberOfLines={folded ? 2 : 0}
+          ellipsizeMode="tail"
+          onTextLayout={(event) => {
+            if (!folded) {
+              setLineCount(event.nativeEvent.lines.length);
+            }
+          }}>
+          {item.text}
+        </ThemedText>
+      </Pressable>
       <View style={styles.footer}>
         <View style={styles.tags}>
           {tags.map((tag, index) => (
