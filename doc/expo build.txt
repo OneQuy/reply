@@ -1,0 +1,105 @@
+THỨ TỰ BUILD:
+
+Lần lượt:
+1.0 remove Keys.ts from .gitignore
+1.1 npm run bi (đã gồm nâng version)
+1.2 eas submit -p ios
+2. npm run builda 
+
+APK android: android/app/build/outputs/apk/release/
+
+##########################
+EXPO BUILD TESTFLIGHT
+##########################
+
+one time ----------------------------
+
+1. eas init
+
+2. edit app.json
+{
+  "expo": {
+    "name": "YourAppName",
+    "slug": "your-app-name",
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.yourapp"
+    }
+  }
+}
+
+3. create .easignore file (if not yet)
+node_modules/
+.git/
+.env
+dist/
+build/
+your-ignored-folder/
+
+4. eas login (if needed)
+
+5. Reuse this distribution certificate? y
+
+6. Generate a new Apple Provisioning Profile? y
+
+every time ----------------------------
+
+1. remove Keys.ts from .gitignore (should not commit)
+
+2. 
+eas build -p ios
+    + (if required) Do you want to log in to your Apple account? › Yes
+    + (if required) press Y if need create provisioning profile
+
+3. 
+eas submit -p ios
+    + (if required) Generate a new App Store Connect API Key? Yes    
+
+4. undo: 2. and add Keys.ts back to .gitignore
+
+##########################
+EXPO BUILD APK
+##########################
+
+
+one time ----------------------------
+
+1. eas init
+
+2. eas build:configure
+> select Android
+
+3. edit app.json
+{
+  "expo": {
+    "name": "Your App Name",
+    "slug": "your-app",
+    "android": {
+      "package": "com.yourcompany.yourapp"
+    }
+  }
+}
+
+4. create .easignore file (if not yet)
+node_modules/
+.git/
+.env
+dist/
+build/
+your-ignored-folder/
+
+5. eas login (if needed)
+
+every time ----------------------------
+
+1. remove Keys.ts from .gitignore (should not commit)
+
+2. To build an APK (PREVIEW)
+eas build --platform android --profile preview
+> Generate a new Android Keystore? Yes
+
+OR
+
+2. To build an APK (PRODUCTION)
+eas build --platform android --profile production
+
+3. undo: 2. and add Keys.ts back to .gitignore
