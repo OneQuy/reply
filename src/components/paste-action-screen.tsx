@@ -10,6 +10,7 @@ import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { wordingText } from '@/lib/openrouter';
 
@@ -30,6 +31,7 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
   const [result, setResult] = useState('');
   const [added, setAdded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRef = useTabScrollToTop();
   const buttonHeight = Math.max(64, Math.round(height * 0.1));
 
   const clearFlash = useCallback(() => {
@@ -107,8 +109,12 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
 
   return (
     <Screen>
-      <View style={[styles.body, { paddingBottom: Spacing.three + BottomTabInset + insets.bottom }]}>
-        <ScrollView style={styles.result} contentContainerStyle={styles.resultContent} keyboardShouldPersistTaps="handled">
+      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + BottomTabInset + insets.bottom }]}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.result}
+          contentContainerStyle={styles.resultContent}
+          keyboardShouldPersistTaps="handled">
           {result ? (
             <View style={styles.resultBlock}>
               <ThemedText style={styles.resultText}>{result}</ThemedText>

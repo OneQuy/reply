@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { WordingCard } from '@/components/wording-card';
 import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 
 const COLUMNS = 2;
 const GRID_PADDING = Spacing.three;
@@ -24,6 +25,7 @@ type EditorState =
 
 export default function WordingScreen() {
   const insets = useSafeAreaInsets();
+  const scrollRef = useTabScrollToTop();
   const { width } = useWindowDimensions();
   const { ready, items, settings, addItem, updateItem, deleteItem, pinItem, clearSuccessFlash } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
@@ -115,8 +117,9 @@ export default function WordingScreen() {
           ))}
         </View>
       ) : null}
-      <View style={styles.gridArea}>
+      <View collapsable={false} style={styles.gridArea}>
         <ScrollView
+          ref={scrollRef}
           style={styles.gridScroll}
           contentContainerStyle={[styles.content, { paddingBottom: overlayClearance }]}
           keyboardShouldPersistTaps="handled">

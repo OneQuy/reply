@@ -16,12 +16,14 @@ import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { parseFlashSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS } from '@/types/app';
 
 export default function SettingScreen() {
   const theme = useTheme();
+  const scrollRef = useTabScrollToTop();
   const { settings, updateSettings } = useAppState();
   const [model, setModel] = useState(settings.model);
   const [models, setModels] = useState(settings.models ?? [settings.model]);
@@ -115,8 +117,8 @@ export default function SettingScreen() {
           {Constants.expoConfig?.version ?? ''}
         </ThemedText>
       }>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView collapsable={false} style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.field}>
             <ThemedText type="smallBold">Model</ThemedText>
             <View style={styles.modelList}>
