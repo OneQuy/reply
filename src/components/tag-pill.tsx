@@ -3,19 +3,27 @@ import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getTagColor } from '@/lib/tag-color';
 
 type TagPillProps = {
   label: string;
   selected?: boolean;
   compact?: boolean;
+  tone?: 'color' | 'neutral';
   onPress?: () => void;
   onRemove?: () => void;
 };
 
-export function TagPill({ label, selected, compact, onPress, onRemove }: TagPillProps) {
+export function TagPill({ label, selected, compact, tone = 'color', onPress, onRemove }: TagPillProps) {
+  const theme = useTheme();
   const scheme = useColorScheme();
-  const colors = getTagColor(label, scheme === 'dark');
+  const colors =
+    tone === 'neutral'
+      ? selected
+        ? { backgroundColor: '#000000', color: '#FFFFFF' }
+        : { backgroundColor: theme.backgroundSelected, color: theme.textSecondary }
+      : getTagColor(label, scheme === 'dark');
 
   return (
     <Pressable
@@ -25,7 +33,7 @@ export function TagPill({ label, selected, compact, onPress, onRemove }: TagPill
         styles.pill,
         compact && styles.pillCompact,
         { backgroundColor: colors.backgroundColor },
-        selected && { borderColor: colors.color },
+        tone === 'color' && selected ? { borderColor: colors.color } : null,
         pressed && onPress && styles.pressed,
       ]}>
       <ThemedText style={[styles.label, compact && styles.labelCompact, { color: colors.color }]} numberOfLines={1}>

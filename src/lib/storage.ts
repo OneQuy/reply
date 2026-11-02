@@ -48,6 +48,8 @@ export async function loadSettings(): Promise<AppSettings> {
         typeof parsed.smoothPrompt === 'string' && parsed.smoothPrompt.trim()
           ? parsed.smoothPrompt
           : DEFAULT_SETTINGS.smoothPrompt,
+      replyTags: normalizeTags(parsed.replyTags),
+      replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
       flashSeconds: parseFlashSeconds(parsed.flashSeconds),
     };
   } catch {
@@ -65,6 +67,25 @@ export function parseFlashSeconds(value: unknown): number {
     return DEFAULT_SETTINGS.flashSeconds;
   }
   return Math.round(parsed);
+}
+
+export function parseTagPrompts(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const prompts: Record<string, string> = {};
+  for (const [key, prompt] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof prompt !== 'string') continue;
+    const tag = key.trim().toLowerCase();
+    const text = prompt.trim();
+    if (!tag || !text) continue;
+    prompts[tag] = text;
+  }
+  return prompts;
+}
+
+export function getReplyPromptForTag(settings: AppSettings, tag: string | null | undefined, fallback: string): string {
+  if (!tag) return fallback;
+  const tagged = settings.replyTagPrompts?.[tag.toLowerCase()];
+  return tagged?.trim() || fallback;
 }
 
 export function normalizeTags(value: unknown): string[] {

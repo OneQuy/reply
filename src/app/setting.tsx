@@ -37,6 +37,11 @@ export default function SettingScreen() {
     reply: false,
     smooth: false,
   });
+  const [editingTagKey, setEditingTagKey] = useState<string | null>(null);
+  const [tagPromptDraft, setTagPromptDraft] = useState('');
+  const [tab, setTab] = useState<'general' | 'reply'>('general');
+  const replyTags = settings.replyTags ?? [];
+  const defaultReplyPrompt = settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt;
 
   useEffect(() => {
     setFlashSeconds(String(settings.flashSeconds));
@@ -103,7 +108,27 @@ export default function SettingScreen() {
     setSmoothPrompt(DEFAULT_SETTINGS.smoothPrompt);
     setFlashSeconds(String(DEFAULT_SETTINGS.flashSeconds));
     setEditingPrompts({ wording: false, reply: false, smooth: false });
+    setEditingTagKey(null);
+    setTagPromptDraft('');
     updateSettings(DEFAULT_SETTINGS);
+  };
+
+  const handleEditTagPrompt = (tag: string) => {
+    setTagPromptDraft(settings.replyTagPrompts?.[tag.toLowerCase()] ?? '');
+    setEditingTagKey(tag.toLowerCase());
+  };
+
+  const handleSaveTagPrompt = () => {
+    if (!editingTagKey) return;
+    const next = tagPromptDraft.trim();
+    const prompts = { ...settings.replyTagPrompts };
+    if (next) {
+      prompts[editingTagKey] = next;
+    } else {
+      delete prompts[editingTagKey];
+    }
+    updateSettings({ replyTagPrompts: prompts });
+    setEditingTagKey(null);
   };
 
   return (
@@ -115,111 +140,168 @@ export default function SettingScreen() {
         </ThemedText>
       }>
       <KeyboardAvoidingView collapsable={false} style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Model</ThemedText>
-            <View style={styles.modelList}>
-              {models.map((name) => {
-                const selected = name === settings.model;
-                return (
-                  <Pressable
-                    key={name}
-                    onPress={() => handleSelectModel(name)}
-                    style={({ pressed }) => [
-                      styles.modelRow,
-                      { backgroundColor: theme.backgroundElement },
-                      pressed && styles.pressed,
-                    ]}>
-                    <Ionicons
-                      name={selected ? 'radio-button-on' : 'radio-button-off'}
-                      size={20}
-                      color={selected ? theme.text : theme.textSecondary}
-                    />
-                    <ThemedText style={styles.modelName}>{name}</ThemedText>
-                    {models.length > 1 ? (
-                      <IconButton name="trash-outline" onPress={() => handleRemoveModel(name)} danger />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-            <View style={styles.addRow}>
-              <TextInput
-                value={newModel}
-                onChangeText={setNewModel}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="Add model (provider/model)"
-                placeholderTextColor={theme.textSecondary}
-                onSubmitEditing={handleAddModel}
-                returnKeyType="done"
-                style={[styles.input, styles.addInput, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-              />
+        <View style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
+          {(['general', 'reply'] as const).map((name) => {
+            const selected = tab === name;
+            return (
               <Pressable
-                onPress={handleAddModel}
-                style={({ pressed }) => [styles.addButton, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
-                <ThemedText>Add</ThemedText>
-              </Pressable>
-            </View>
-          </View>
-
-          <PromptField
-            label="Wording prompt"
-            value={editingPrompts.wording ? prompt : settings.prompt}
-            onChangeText={setPrompt}
-            placeholder={DEFAULT_SETTINGS.prompt}
-            editing={editingPrompts.wording}
-            onEdit={() => handleEditPrompt('wording')}
-            onSave={() => handleSavePrompt('wording')}
-          />
-
-          <PromptField
-            label="Reply prompt"
-            value={editingPrompts.reply ? replyPrompt : (settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt)}
-            onChangeText={setReplyPrompt}
-            placeholder={DEFAULT_SETTINGS.replyPrompt}
-            editing={editingPrompts.reply}
-            onEdit={() => handleEditPrompt('reply')}
-            onSave={() => handleSavePrompt('reply')}
-          />
-
-          <PromptField
-            label="Smooth prompt"
-            value={editingPrompts.smooth ? smoothPrompt : (settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt)}
-            onChangeText={setSmoothPrompt}
-            placeholder={DEFAULT_SETTINGS.smoothPrompt}
-            editing={editingPrompts.smooth}
-            onEdit={() => handleEditPrompt('smooth')}
-            onSave={() => handleSavePrompt('smooth')}
-          />
-
-          <View style={styles.field}>
-            <View style={styles.fieldHeader}>
-              <ThemedText type="smallBold">Flash time (seconds)</ThemedText>
-              <Pressable
-                onPress={handleSaveFlash}
-                hitSlop={6}
-                style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
-                <ThemedText type="small" style={flashSaved ? styles.savedLabel : undefined}>
-                  {flashSaved ? 'Saved' : 'Save'}
+                key={name}
+                onPress={() => setTab(name)}
+                style={({ pressed }) => [
+                  styles.tab,
+                  selected && styles.tabSelected,
+                  pressed && !selected && styles.pressed,
+                ]}>
+                <ThemedText
+                  themeColor={selected ? 'text' : 'textSecondary'}
+                  style={[styles.tabLabel, selected && styles.tabLabelSelected]}>
+                  {name === 'general' ? 'General' : 'Reply'}
                 </ThemedText>
               </Pressable>
-            </View>
-            <TextInput
-              value={flashSeconds}
-              onChangeText={setFlashSeconds}
-              keyboardType="number-pad"
-              placeholder={String(DEFAULT_SETTINGS.flashSeconds)}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            />
-          </View>
+            );
+          })}
+        </View>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {tab === 'general' ? (
+            <>
+              <View style={styles.field}>
+                <ThemedText type="smallBold">Model</ThemedText>
+                <View style={styles.modelList}>
+                  {models.map((name) => {
+                    const selected = name === settings.model;
+                    return (
+                      <Pressable
+                        key={name}
+                        onPress={() => handleSelectModel(name)}
+                        style={({ pressed }) => [
+                          styles.modelRow,
+                          { backgroundColor: theme.backgroundElement },
+                          pressed && styles.pressed,
+                        ]}>
+                        <Ionicons
+                          name={selected ? 'radio-button-on' : 'radio-button-off'}
+                          size={20}
+                          color={selected ? theme.text : theme.textSecondary}
+                        />
+                        <ThemedText style={styles.modelName}>{name}</ThemedText>
+                        {models.length > 1 ? (
+                          <IconButton name="trash-outline" onPress={() => handleRemoveModel(name)} danger />
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <View style={styles.addRow}>
+                  <TextInput
+                    value={newModel}
+                    onChangeText={setNewModel}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="Add model (provider/model)"
+                    placeholderTextColor={theme.textSecondary}
+                    onSubmitEditing={handleAddModel}
+                    returnKeyType="done"
+                    style={[styles.input, styles.addInput, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                  />
+                  <Pressable
+                    onPress={handleAddModel}
+                    style={({ pressed }) => [styles.addButton, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+                    <ThemedText>Add</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
 
-          <Pressable
-            onPress={handleReset}
-            style={({ pressed }) => [styles.button, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
-            <ThemedText themeColor="textSecondary">Reset defaults</ThemedText>
-          </Pressable>
+              <PromptField
+                label="Wording prompt"
+                value={editingPrompts.wording ? prompt : settings.prompt}
+                onChangeText={setPrompt}
+                placeholder={DEFAULT_SETTINGS.prompt}
+                editing={editingPrompts.wording}
+                onEdit={() => handleEditPrompt('wording')}
+                onSave={() => handleSavePrompt('wording')}
+              />
+
+              <PromptField
+                label="Smooth prompt"
+                value={editingPrompts.smooth ? smoothPrompt : (settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt)}
+                onChangeText={setSmoothPrompt}
+                placeholder={DEFAULT_SETTINGS.smoothPrompt}
+                editing={editingPrompts.smooth}
+                onEdit={() => handleEditPrompt('smooth')}
+                onSave={() => handleSavePrompt('smooth')}
+              />
+
+              <View style={styles.field}>
+                <View style={styles.fieldHeader}>
+                  <ThemedText type="smallBold">Flash time (seconds)</ThemedText>
+                  <Pressable
+                    onPress={handleSaveFlash}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+                    <ThemedText type="small" style={flashSaved ? styles.savedLabel : undefined}>
+                      {flashSaved ? 'Saved' : 'Save'}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                <TextInput
+                  value={flashSeconds}
+                  onChangeText={setFlashSeconds}
+                  keyboardType="number-pad"
+                  placeholder={String(DEFAULT_SETTINGS.flashSeconds)}
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                />
+              </View>
+
+              <Pressable
+                onPress={handleReset}
+                style={({ pressed }) => [styles.button, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+                <ThemedText themeColor="textSecondary">Reset defaults</ThemedText>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <PromptField
+                label="Reply prompt"
+                value={editingPrompts.reply ? replyPrompt : (settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt)}
+                onChangeText={setReplyPrompt}
+                placeholder={DEFAULT_SETTINGS.replyPrompt}
+                editing={editingPrompts.reply}
+                onEdit={() => handleEditPrompt('reply')}
+                onSave={() => handleSavePrompt('reply')}
+              />
+
+              {replyTags.length > 0 ? (
+                <View style={styles.field}>
+                  <ThemedText type="smallBold">Tag prompts</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Empty tag prompts use the default Reply prompt.
+                  </ThemedText>
+                  {replyTags.map((tag) => {
+                    const key = tag.toLowerCase();
+                    const editing = editingTagKey === key;
+                    const stored = settings.replyTagPrompts?.[key] ?? '';
+                    return (
+                      <PromptField
+                        key={key}
+                        label={tag}
+                        value={editing ? tagPromptDraft : stored}
+                        onChangeText={setTagPromptDraft}
+                        placeholder={defaultReplyPrompt}
+                        editing={editing}
+                        onEdit={() => handleEditTagPrompt(tag)}
+                        onSave={handleSaveTagPrompt}
+                      />
+                    );
+                  })}
+                </View>
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Add tags on the Reply tab to set per-tag prompts.
+                </ThemedText>
+              )}
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -286,6 +368,32 @@ function PromptField({ label, value, onChangeText, placeholder, editing, onEdit,
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  tabs: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.three,
+    marginBottom: Spacing.two,
+    padding: 3,
+    borderRadius: 12,
+    gap: 3,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  tabSelected: {
+    backgroundColor: '#000000',
+  },
+  tabLabel: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: 600,
+  },
+  tabLabelSelected: {
+    color: '#FFFFFF',
   },
   content: {
     paddingHorizontal: Spacing.three,

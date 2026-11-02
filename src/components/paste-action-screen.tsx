@@ -21,11 +21,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClipboardPasteControl } from '@/components/clipboard-paste-control';
 import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
+import { TagEditorModal } from '@/components/tag-editor-modal';
+import { TagPill } from '@/components/tag-pill';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
+import { getReplyPromptForTag } from '@/lib/storage';
 import { wordingText } from '@/lib/openrouter';
 
 type FlashState = 'idle' | 'success';
@@ -36,6 +39,7 @@ type PasteActionScreenProps = {
   emptyText: string;
   showAgain?: boolean;
   showInput?: boolean;
+  showTags?: boolean;
 };
 
 const INPUT_LINE_HEIGHT = 22;
@@ -53,11 +57,17 @@ function getResultTextStyle(text: string) {
   return styles.resultText;
 }
 
-export function PasteActionScreen({ prompt, emptyText, showAgain = false, showInput = false }: PasteActionScreenProps) {
+export function PasteActionScreen({
+  prompt,
+  emptyText,
+  showAgain = false,
+  showInput = false,
+  showTags = false,
+}: PasteActionScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
-  const { settings, recordRequest, addItem } = useAppState();
+  const { settings, recordRequest, addItem, updateSettings } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null);
@@ -66,6 +76,8 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState('');
   const [added, setAdded] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useTabScrollToTop();
   const buttonHeight = Math.max(64, Math.round(height * 0.1));
@@ -115,8 +127,17 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
     }, duration);
   };
 
+  const replyTags = settings.replyTags ?? [];
+  const activePrompt = showTags ? getReplyPromptForTag(settings, selectedTag, prompt) : prompt;
+
+  useEffect(() => {
+    if (selectedTag && !replyTags.some((tag) => tag.toLowerCase() === selectedTag.toLowerCase())) {
+      setSelectedTag(null);
+    }
+  }, [replyTags, selectedTag]);
+
   const requestFromSource = async (source: string, action: ActionKind) => {
-    const nextResult = await wordingText(source, settings.model, prompt);
+    const nextResult = await wordingText(source, settings.model, activePrompt);
     await Clipboard.setStringAsync(nextResult.text);
     recordRequest({ cost: nextResult.cost });
     setResult(nextResult.text);
@@ -256,6 +277,28 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
             />
           )}
 
+          {showTags ? (
+            <View style={styles.tagRow}>
+              {replyTags.map((tag) => (
+                <TagPill
+                  key={tag}
+                  label={tag}
+                  tone="neutral"
+                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                  onPress={() =>
+                    setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))
+                  }
+                />
+              ))}
+              <Pressable
+                onPress={() => setTagEditorOpen(true)}
+                hitSlop={4}
+                style={({ pressed }) => [styles.addTag, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+                <Ionicons name="add" size={14} color={theme.textSecondary} />
+              </Pressable>
+            </View>
+          ) : null}
+
           {showAgain && sourceText ? (
             <Pressable
               onPress={() => void handleAgain()}
@@ -282,6 +325,15 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
         </View>
       </View>
       </KeyboardAvoidingView>
+      {showTags ? (
+        <TagEditorModal
+          visible={tagEditorOpen}
+          tags={replyTags}
+          tone="neutral"
+          onClose={() => setTagEditorOpen(false)}
+          onSave={(tags) => updateSettings({ replyTags: tags })}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -325,6 +377,20 @@ const styles = StyleSheet.create({
   resultContent: {
     flexGrow: 1,
     justifyContent: 'flex-end',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.one,
+    alignItems: 'center',
+    minHeight: 24,
+  },
+  addTag: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   costRow: {
     minHeight: 16,

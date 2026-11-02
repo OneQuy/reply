@@ -17,11 +17,12 @@ import { useTheme } from '@/hooks/use-theme';
 type TagEditorModalProps = {
   visible: boolean;
   tags: string[];
+  tone?: 'color' | 'neutral';
   onClose: () => void;
   onSave: (tags: string[]) => void;
 };
 
-export function TagEditorModal({ visible, tags, onClose, onSave }: TagEditorModalProps) {
+export function TagEditorModal({ visible, tags, tone = 'color', onClose, onSave }: TagEditorModalProps) {
   const theme = useTheme();
   const [draft, setDraft] = useState(tags);
   const [value, setValue] = useState('');
@@ -60,7 +61,7 @@ export function TagEditorModal({ visible, tags, onClose, onSave }: TagEditorModa
               </ThemedText>
             ) : (
               draft.map((tag, index) => (
-                <TagPill key={`${tag}-${index}`} label={tag} onRemove={() => handleRemove(index)} />
+                <TagPill key={`${tag}-${index}`} label={tag} tone={tone} onRemove={() => handleRemove(index)} />
               ))
             )}
           </View>
