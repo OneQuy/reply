@@ -1,19 +1,4 @@
-1. This is the new project. Clear all template code
-
-2. Implement bottom bar, tabs:
-- Wording
-- Reply
-- setting
-
-3. Tab Wording:
-- grid of items, 3 items per row
-- each item:
-    + small text content: truncate if too long
-    + bottom icons as buttons:
-        * wording: call openrouter api, key: OPENROUTER_API_KEY_onequy, model "google/gemini-2.5-flash-lite". prompt "wording the text, use difference words, keep the exact meaning. only return the text result, not anything else". this prompt can change in setting tab, the model name can update in setting too. after get the result, the item bg should green for 5s to notify me (not need any alert or popup), after turn back to normal, and the text result auto copied to clipboard
-        * edit text
-        * pin to first item
-        * delete item
-- can add new 
-
-- you can install any package to Implementation
+npx expo export --platform web
+npx eas-cli@latest deploy
+# production:
+npx eas-cli@latest deploy --prod
