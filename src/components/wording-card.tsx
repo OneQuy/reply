@@ -14,6 +14,7 @@ import { useAppState } from '@/context/app-state';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { wordingText } from '@/lib/openrouter';
+import { resolveOpenRouterModel } from '@/lib/storage';
 import { type AppSettings, type WordingItem } from '@/types/app';
 
 type WordingCardProps = {
@@ -63,9 +64,10 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
     }
     setLoading(true);
     try {
-      const nextResult = await wordingText(item.text, settings.model, settings.prompt);
+      const model = resolveOpenRouterModel(settings);
+      const nextResult = await wordingText(item.text, model, settings.prompt);
       await Clipboard.setStringAsync(nextResult.text);
-      recordRequest({ cost: nextResult.cost });
+      recordRequest({ cost: nextResult.cost, model });
       if (showResultAfterRequest.current) {
         setResult(nextResult.text);
       }

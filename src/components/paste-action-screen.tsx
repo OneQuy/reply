@@ -28,8 +28,8 @@ import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
-import { getReplyPromptForTag } from '@/lib/storage';
 import { wordingText } from '@/lib/openrouter';
+import { getReplyPromptForTag, resolveOpenRouterModel } from '@/lib/storage';
 
 type FlashState = 'idle' | 'success';
 type ActionKind = 'paste' | 'again';
@@ -137,9 +137,10 @@ export function PasteActionScreen({
   }, [replyTags, selectedTag]);
 
   const requestFromSource = async (source: string, action: ActionKind) => {
-    const nextResult = await wordingText(source, settings.model, activePrompt);
+    const model = resolveOpenRouterModel(settings);
+    const nextResult = await wordingText(source, model, activePrompt);
     await Clipboard.setStringAsync(nextResult.text);
-    recordRequest({ cost: nextResult.cost });
+    recordRequest({ cost: nextResult.cost, model });
     setResult(nextResult.text);
     setAdded(false);
     flashFor('success', action, settings.flashSeconds * 1000);

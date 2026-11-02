@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/ap
 
 export type LastRequest = {
   cost: number | null;
+  model: string;
 };
 
 type AppStateContextValue = {

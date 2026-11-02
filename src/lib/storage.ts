@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { DEFAULT_SETTINGS, type AppSettings, type AppTheme, type WordingItem } from '@/types/app';
+import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppSettings, type AppTheme, type WordingItem } from '@/types/app';
 
 const ITEMS_KEY = 'wording_items';
 const SETTINGS_KEY = 'app_settings';
@@ -119,11 +119,27 @@ export function normalizeTags(value: unknown): string[] {
 export function parseModels(value: Partial<Pick<AppSettings, 'model' | 'models'>>): { model: string; models: string[] } {
   const selected = typeof value.model === 'string' && value.model.trim() ? value.model.trim() : DEFAULT_SETTINGS.model;
   const listed = Array.isArray(value.models)
-    ? value.models.filter((item): item is string => typeof item === 'string' && Boolean(item.trim())).map((item) => item.trim())
+    ? value.models
+        .filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+        .map((item) => item.trim())
+        .filter((item) => item !== RANDOM_MODEL)
     : [];
-  const models = [...new Set(listed.length ? listed : [selected])];
-  if (!models.includes(selected)) {
+  const fallback = selected === RANDOM_MODEL ? DEFAULT_SETTINGS.model : selected;
+  const models = [...new Set(listed.length ? listed : [fallback])];
+  if (selected !== RANDOM_MODEL && !models.includes(selected)) {
     models.unshift(selected);
   }
   return { model: selected, models };
+}
+
+export function resolveOpenRouterModel(settings: Pick<AppSettings, 'model' | 'models'>): string {
+  const models = settings.models?.filter((item) => item && item !== RANDOM_MODEL) ?? [];
+  if (settings.model === RANDOM_MODEL) {
+    if (models.length === 0) return DEFAULT_SETTINGS.model;
+    return models[Math.floor(Math.random() * models.length)] ?? DEFAULT_SETTINGS.model;
+  }
+  if (typeof settings.model === 'string' && settings.model.trim()) {
+    return settings.model.trim();
+  }
+  return models[0] ?? DEFAULT_SETTINGS.model;
 }

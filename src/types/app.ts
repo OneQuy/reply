@@ -7,6 +7,8 @@ export type WordingItem = {
 
 export type AppTheme = 'light' | 'dark' | 'system';
 
+export const RANDOM_MODEL = 'random';
+
 export type AppSettings = {
   model: string;
   models: string[];

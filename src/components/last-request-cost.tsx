@@ -20,9 +20,12 @@ export function LastRequestCost() {
     return null;
   }
 
+  const cost = formatRequestCost(lastRequest.cost);
+  const label = lastRequest.model ? `${cost} - ${lastRequest.model}` : cost;
+
   return (
     <ThemedText type="small" themeColor="textSecondary" style={styles.text}>
-      Last request {formatRequestCost(lastRequest.cost)}
+      {label}
     </ThemedText>
   );
 }

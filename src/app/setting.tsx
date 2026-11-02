@@ -24,7 +24,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseFlashSeconds } from '@/lib/storage';
-import { DEFAULT_SETTINGS } from '@/types/app';
+import { DEFAULT_SETTINGS, RANDOM_MODEL } from '@/types/app';
 
 export default function SettingScreen() {
   const theme = useTheme();
@@ -62,7 +62,7 @@ export default function SettingScreen() {
 
   const handleAddModel = () => {
     const next = newModel.trim();
-    if (!next) return;
+    if (!next || next === RANDOM_MODEL) return;
     const nextModels = models.includes(next) ? models : [...models, next];
     updateSettings({ models: nextModels, model: next });
     setNewModel('');
@@ -233,6 +233,20 @@ export default function SettingScreen() {
               <View style={styles.field}>
                 <ThemedText type="smallBold">Model</ThemedText>
                 <View style={styles.modelList}>
+                  <Pressable
+                    onPress={() => handleSelectModel(RANDOM_MODEL)}
+                    style={({ pressed }) => [
+                      styles.modelRow,
+                      { backgroundColor: theme.backgroundElement },
+                      pressed && styles.pressed,
+                    ]}>
+                    <Ionicons
+                      name={settings.model === RANDOM_MODEL ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={settings.model === RANDOM_MODEL ? theme.text : theme.textSecondary}
+                    />
+                    <ThemedText style={styles.modelName}>Random</ThemedText>
+                  </Pressable>
                   {models.map((name) => {
                     const selected = name === settings.model;
                     return (
