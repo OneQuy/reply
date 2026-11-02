@@ -30,7 +30,6 @@ export default function WordingScreen() {
   const { ready, items, settings, addItem, updateItem, deleteItem, pinItem, clearSuccessFlash } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [flashReset, setFlashReset] = useState(0);
 
   // const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
   const addBarPaddingBottom = Spacing.two + insets.bottom;
@@ -70,7 +69,6 @@ export default function WordingScreen() {
   }, [visibleItems]);
 
   const clearFlashes = useCallback(() => {
-    setFlashReset((value) => value + 1);
     clearSuccessFlash();
   }, [clearSuccessFlash]);
 
@@ -147,7 +145,6 @@ export default function WordingScreen() {
                       item={item}
                       width={cardWidth}
                       settings={settings}
-                      flashReset={flashReset}
                       selectedTag={selectedTag}
                       onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
                       onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { IconButton } from '@/components/icon-button';
 import { TagEditorModal } from '@/components/tag-editor-modal';
@@ -13,13 +13,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { wordingText } from '@/lib/openrouter';
 import { type AppSettings, type WordingItem } from '@/types/app';
 
-type FlashState = 'idle' | 'success' | 'error';
-
 type WordingCardProps = {
   item: WordingItem;
   width: number;
   settings: AppSettings;
-  flashReset: number;
   selectedTag?: string | null;
   onTagPress: (tag: string) => void;
   onEdit: () => void;
@@ -27,46 +24,12 @@ type WordingCardProps = {
   onDelete: () => void;
 };
 
-export function WordingCard({ item, width, settings, flashReset, selectedTag, onTagPress, onEdit, onPin, onDelete }: WordingCardProps) {
+export function WordingCard({ item, width, settings, selectedTag, onTagPress, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
   const { recordRequest, updateItemTags, setItemFolded, successFlashId, startSuccessFlash, clearSuccessFlash } = useAppState();
-  const [errorFlash, setErrorFlash] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [lineCount, setLineCount] = useState(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const initialReset = useRef(true);
-  useEffect(() => {
-    if (initialReset.current) {
-      initialReset.current = false;
-      return;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setErrorFlash(false);
-  }, [flashReset]);
-
-  const flashError = (duration: number) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setErrorFlash(true);
-    timeoutRef.current = setTimeout(() => {
-      setErrorFlash(false);
-      timeoutRef.current = null;
-    }, duration);
-  };
 
   const handleWording = async () => {
     if (loading) return;
@@ -75,13 +38,12 @@ export function WordingCard({ item, width, settings, flashReset, selectedTag, on
       const result = await wordingText(item.text, settings.model, settings.prompt);
       await Clipboard.setStringAsync(result.text);
       recordRequest({ cost: result.cost });
-      setErrorFlash(false);
       startSuccessFlash(item.id, settings.flashSeconds * 1000);
-    } catch {
+    } catch (error) {
       if (successFlashId === item.id) {
         clearSuccessFlash();
       }
-      flashError(1600);
+      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -98,10 +60,9 @@ export function WordingCard({ item, width, settings, flashReset, selectedTag, on
   };
 
   const tags = item.tags ?? [];
-  const flash: FlashState = errorFlash ? 'error' : successFlashId === item.id ? 'success' : 'idle';
-  const backgroundColor =
-    flash === 'success' ? '#22C55E' : flash === 'error' ? '#F87171' : theme.backgroundElement;
-  const textColor = flash === 'idle' ? theme.text : '#0B1B0E';
+  const isSuccess = successFlashId === item.id;
+  const backgroundColor = isSuccess ? '#22C55E' : theme.backgroundElement;
+  const textColor = isSuccess ? '#0B1B0E' : theme.text;
   const folded = item.folded === true;
 
   return (

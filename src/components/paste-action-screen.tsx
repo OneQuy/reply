@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   AppState,
   Keyboard,
   KeyboardAvoidingView,
@@ -27,7 +28,7 @@ import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { wordingText } from '@/lib/openrouter';
 
-type FlashState = 'idle' | 'success' | 'error';
+type FlashState = 'idle' | 'success';
 type ActionKind = 'paste' | 'again';
 
 type PasteActionScreenProps = {
@@ -39,6 +40,18 @@ type PasteActionScreenProps = {
 
 const INPUT_LINE_HEIGHT = 22;
 const INPUT_HEIGHT = INPUT_LINE_HEIGHT * 3 + Spacing.two * 2;
+
+function getResultTextStyle(text: string) {
+  const length = text.trim().length;
+  const lines = text.split('\n').length;
+  if (length > 280 || lines > 8) {
+    return styles.resultTextSmall;
+  }
+  if (length > 120 || lines > 4) {
+    return styles.resultTextMedium;
+  }
+  return styles.resultText;
+}
 
 export function PasteActionScreen({ prompt, emptyText, showAgain = false, showInput = false }: PasteActionScreenProps) {
   const theme = useTheme();
@@ -119,8 +132,8 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
     try {
       setSourceText(source);
       await requestFromSource(source, 'paste');
-    } catch {
-      flashFor('error', 'paste', 1600);
+    } catch (error) {
+      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
       setPendingAction(null);
@@ -133,8 +146,8 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
     setPendingAction('again');
     try {
       await requestFromSource(sourceText, 'again');
-    } catch {
-      flashFor('error', 'again', 1600);
+    } catch (error) {
+      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
       setPendingAction(null);
@@ -142,10 +155,10 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
   };
 
   const actionStyle = (action: ActionKind) => {
-    const isFlashed = flashedAction === action && flash !== 'idle';
+    const isFlashed = flashedAction === action && flash === 'success';
     const idleBackground = action === 'again' ? theme.backgroundSelected : theme.backgroundElement;
     return {
-      backgroundColor: isFlashed ? (flash === 'success' ? '#22C55E' : '#F87171') : idleBackground,
+      backgroundColor: isFlashed ? '#22C55E' : idleBackground,
       contentColor: isFlashed ? '#0B1B0E' : theme.text,
     };
   };
@@ -172,7 +185,7 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
           keyboardShouldPersistTaps="handled">
           {result ? (
             <View style={styles.resultBlock}>
-              <ThemedText style={styles.resultText}>{result}</ThemedText>
+              <ThemedText style={getResultTextStyle(result)}>{result}</ThemedText>
               <Pressable
                 onPress={handleAddToWording}
                 style={({ pressed }) => [
@@ -232,7 +245,7 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false, showIn
           ) : (
             <ClipboardPasteControl
               onPaste={(source) => void pasteSource(source)}
-              onEmpty={() => flashFor('error', 'paste', 1600)}
+              onEmpty={() => Alert.alert('', 'Clipboard is empty')}
               disabled={loading}
               loading={pendingAction === 'paste'}
               width={pasteButtonWidth}
@@ -324,6 +337,18 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 22,
     lineHeight: 30,
+    fontWeight: 500,
+    alignSelf: 'stretch',
+  },
+  resultTextMedium: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: 500,
+    alignSelf: 'stretch',
+  },
+  resultTextSmall: {
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: 500,
     alignSelf: 'stretch',
   },
