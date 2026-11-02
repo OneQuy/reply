@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Pressable, StyleSheet, View } from 'react-native';
 
 import { IconButton } from '@/components/icon-button';
 import { TagEditorModal } from '@/components/tag-editor-modal';
 import { TagPill } from '@/components/tag-pill';
 import { ThemedText } from '@/components/themed-text';
+import { WordingResultModal } from '@/components/wording-result-modal';
 import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,23 +28,47 @@ type WordingCardProps = {
 
 export function WordingCard({ item, width, settings, selectedTag, onTagPress, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
-  const { recordRequest, updateItemTags, setItemFolded, successFlashId, startSuccessFlash, clearSuccessFlash } = useAppState();
+  const { recordRequest, updateItemTags, setItemFolded } = useAppState();
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [lineCount, setLineCount] = useState(0);
+  const showResultAfterRequest = useRef(true);
+
+  const closeResult = useCallback(() => {
+    showResultAfterRequest.current = false;
+    setResult(null);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => closeResult();
+    }, [closeResult]),
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') {
+        closeResult();
+      }
+    });
+    return () => sub.remove();
+  }, [closeResult]);
 
   const handleWording = async () => {
     if (loading) return;
+    if (result === null) {
+      showResultAfterRequest.current = true;
+    }
     setLoading(true);
     try {
-      const result = await wordingText(item.text, settings.model, settings.prompt);
-      await Clipboard.setStringAsync(result.text);
-      recordRequest({ cost: result.cost });
-      startSuccessFlash(item.id, settings.flashSeconds * 1000);
-    } catch (error) {
-      if (successFlashId === item.id) {
-        clearSuccessFlash();
+      const nextResult = await wordingText(item.text, settings.model, settings.prompt);
+      await Clipboard.setStringAsync(nextResult.text);
+      recordRequest({ cost: nextResult.cost });
+      if (showResultAfterRequest.current) {
+        setResult(nextResult.text);
       }
+    } catch (error) {
       Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
@@ -60,16 +86,13 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
   };
 
   const tags = item.tags ?? [];
-  const isSuccess = successFlashId === item.id;
-  const backgroundColor = isSuccess ? '#22C55E' : theme.backgroundElement;
-  const textColor = isSuccess ? '#0B1B0E' : theme.text;
   const folded = item.folded === true;
 
   return (
-    <View style={[styles.card, { width, backgroundColor }]}>
+    <View style={[styles.card, { width, backgroundColor: theme.backgroundElement }]}>
       <Pressable onPress={handleToggleFold}>
         <ThemedText
-          style={[styles.text, { color: textColor }]}
+          style={styles.text}
           numberOfLines={folded ? 2 : 0}
           ellipsizeMode="tail"
           onTextLayout={(event) => {
@@ -99,7 +122,7 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
           </Pressable>
         </View>
         <View style={styles.actions}>
-          <IconButton name="color-wand-outline" onPress={() => void handleWording()} loading={loading} />
+          <IconButton name="color-wand-outline" onPress={() => void handleWording()} loading={loading && result === null} />
           <IconButton name="pencil-outline" onPress={onEdit} disabled={loading} />
           <IconButton name="pin-outline" onPress={onPin} disabled={loading} />
           <IconButton name="trash-outline" onPress={onDelete} disabled={loading} danger />
@@ -110,6 +133,13 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
         tags={tags}
         onClose={() => setTagEditorOpen(false)}
         onSave={(nextTags) => updateItemTags(item.id, nextTags)}
+      />
+      <WordingResultModal
+        visible={result !== null}
+        text={result ?? ''}
+        loading={loading}
+        onClose={closeResult}
+        onRetry={() => void handleWording()}
       />
     </View>
   );

@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LastRequestCost } from '@/components/last-request-cost';
@@ -27,7 +26,7 @@ export default function WordingScreen() {
   const insets = useSafeAreaInsets();
   const scrollRef = useTabScrollToTop();
   const { width } = useWindowDimensions();
-  const { ready, items, settings, addItem, updateItem, deleteItem, pinItem, clearSuccessFlash } = useAppState();
+  const { ready, items, settings, addItem, updateItem, deleteItem, pinItem } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
@@ -67,25 +66,6 @@ export default function WordingScreen() {
     });
     return next;
   }, [visibleItems]);
-
-  const clearFlashes = useCallback(() => {
-    clearSuccessFlash();
-  }, [clearSuccessFlash]);
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => clearFlashes();
-    }, [clearFlashes]),
-  );
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active') {
-        clearFlashes();
-      }
-    });
-    return () => sub.remove();
-  }, [clearFlashes]);
 
   const cardWidth = useMemo(() => {
     const available = width - GRID_PADDING * 2 - GRID_GAP * (COLUMNS - 1);

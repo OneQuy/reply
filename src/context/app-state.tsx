@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { loadItems, loadSettings, normalizeTags, saveItems, saveSettings } from '@/lib/storage';
 import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/app';
@@ -12,7 +12,6 @@ type AppStateContextValue = {
   items: WordingItem[];
   settings: AppSettings;
   lastRequest: LastRequest | null;
-  successFlashId: string | null;
   addItem: (text: string, tags?: string[]) => void;
   updateItem: (id: string, text: string) => void;
   updateItemTags: (id: string, tags: string[]) => void;
@@ -21,8 +20,6 @@ type AppStateContextValue = {
   pinItem: (id: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   recordRequest: (request: LastRequest) => void;
-  startSuccessFlash: (id: string, durationMs: number) => void;
-  clearSuccessFlash: () => void;
 };
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
@@ -36,8 +33,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<WordingItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [lastRequest, setLastRequest] = useState<LastRequest | null>(null);
-  const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
-  const successFlashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,35 +112,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setLastRequest(request);
   }, []);
 
-  const clearSuccessFlash = useCallback(() => {
-    if (successFlashTimeout.current) {
-      clearTimeout(successFlashTimeout.current);
-      successFlashTimeout.current = null;
-    }
-    setSuccessFlashId(null);
-  }, []);
-
-  const startSuccessFlash = useCallback(
-    (id: string, durationMs: number) => {
-      if (successFlashTimeout.current) {
-        clearTimeout(successFlashTimeout.current);
-      }
-      setSuccessFlashId(id);
-      successFlashTimeout.current = setTimeout(() => {
-        setSuccessFlashId(null);
-        successFlashTimeout.current = null;
-      }, durationMs);
-    },
-    [],
-  );
-
   const value = useMemo(
     () => ({
       ready,
       items,
       settings,
       lastRequest,
-      successFlashId,
       addItem,
       updateItem,
       updateItemTags,
@@ -154,15 +126,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       pinItem,
       updateSettings,
       recordRequest,
-      startSuccessFlash,
-      clearSuccessFlash,
     }),
     [
       ready,
       items,
       settings,
       lastRequest,
-      successFlashId,
       addItem,
       updateItem,
       updateItemTags,
@@ -171,8 +140,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       pinItem,
       updateSettings,
       recordRequest,
-      startSuccessFlash,
-      clearSuccessFlash,
     ],
   );
 
