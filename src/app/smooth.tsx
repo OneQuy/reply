@@ -9,6 +9,7 @@ export default function SmoothScreen() {
     <PasteActionScreen
       prompt={settings.smoothPrompt || DEFAULT_SETTINGS.smoothPrompt}
       emptyText="Paste your text to smoothen it and fix the grammar."
+      showInput
     />
   );
 }

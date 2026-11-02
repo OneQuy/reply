@@ -2,7 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ClipboardPasteControl } from '@/components/clipboard-paste-control';
@@ -22,9 +34,13 @@ type PasteActionScreenProps = {
   prompt: string;
   emptyText: string;
   showAgain?: boolean;
+  showInput?: boolean;
 };
 
-export function PasteActionScreen({ prompt, emptyText, showAgain = false }: PasteActionScreenProps) {
+const INPUT_LINE_HEIGHT = 22;
+const INPUT_HEIGHT = INPUT_LINE_HEIGHT * 3 + Spacing.two * 2;
+
+export function PasteActionScreen({ prompt, emptyText, showAgain = false, showInput = false }: PasteActionScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
@@ -34,6 +50,7 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null);
   const [flashedAction, setFlashedAction] = useState<ActionKind>('paste');
   const [sourceText, setSourceText] = useState('');
+  const [inputText, setInputText] = useState('');
   const [result, setResult] = useState('');
   const [added, setAdded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,6 +113,7 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
 
   const pasteSource = async (source: string) => {
     if (loading) return;
+    Keyboard.dismiss();
     setLoading(true);
     setPendingAction('paste');
     try {
@@ -140,9 +158,12 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
 
   const pasteStyle = actionStyle('paste');
   const againStyle = actionStyle('again');
+  const inputSource = inputText.trim();
+  const useInputSource = showInput && inputSource.length > 0;
 
   return (
     <Screen>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + insets.bottom }]}>
         <ScrollView
           ref={scrollRef}
@@ -171,17 +192,56 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
         </ScrollView>
 
         <View style={styles.actions}>
-          <ClipboardPasteControl
-            onPaste={(source) => void pasteSource(source)}
-            onEmpty={() => flashFor('error', 'paste', 1600)}
-            disabled={loading}
-            loading={pendingAction === 'paste'}
-            width={pasteButtonWidth}
-            height={buttonHeight}
-            backgroundColor={pasteStyle.backgroundColor}
-            foregroundColor={pasteStyle.contentColor}
-            fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
-          />
+          {showInput ? (
+            <TextInput
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Type text, or leave empty to use the clipboard."
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              textAlignVertical="top"
+              editable={!loading}
+              style={[
+                styles.input,
+                {
+                  color: theme.text,
+                  backgroundColor: theme.backgroundElement,
+                },
+              ]}
+            />
+          ) : null}
+
+          {useInputSource ? (
+            <Pressable
+              onPress={() => void pasteSource(inputSource)}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.actionButton,
+                { height: buttonHeight, backgroundColor: pasteStyle.backgroundColor },
+                pressed && !loading && styles.pressed,
+              ]}>
+              {pendingAction === 'paste' ? (
+                <ActivityIndicator color={theme.text} />
+              ) : (
+                <>
+                  <Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />
+                  <ThemedText style={[styles.actionLabel, { color: pasteStyle.contentColor }]}>Paste</ThemedText>
+                </>
+              )}
+            </Pressable>
+          ) : (
+            <ClipboardPasteControl
+              onPaste={(source) => void pasteSource(source)}
+              onEmpty={() => flashFor('error', 'paste', 1600)}
+              disabled={loading}
+              loading={pendingAction === 'paste'}
+              width={pasteButtonWidth}
+              height={buttonHeight}
+              backgroundColor={pasteStyle.backgroundColor}
+              foregroundColor={pasteStyle.contentColor}
+              fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
+            />
+          )}
 
           {showAgain && sourceText ? (
             <Pressable
@@ -208,11 +268,15 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
           </View>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   body: {
     flex: 1,
     paddingHorizontal: Spacing.three,
@@ -221,6 +285,14 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: Spacing.two,
+  },
+  input: {
+    height: INPUT_HEIGHT,
+    borderRadius: 16,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
+    lineHeight: INPUT_LINE_HEIGHT,
   },
   actionButton: {
     borderRadius: 16,
