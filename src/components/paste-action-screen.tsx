@@ -24,7 +24,7 @@ import { Screen } from '@/components/screen';
 import { TagEditorModal } from '@/components/tag-editor-modal';
 import { TagPill } from '@/components/tag-pill';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
@@ -198,7 +198,7 @@ export function PasteActionScreen({
   return (
     <Screen>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + insets.bottom }]}>
+      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + FloatingTabInset + insets.bottom }]}>
         <ScrollView
           ref={scrollRef}
           style={styles.result}

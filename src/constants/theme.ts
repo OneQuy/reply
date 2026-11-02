@@ -61,5 +61,11 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/** Height of the floating web tab bar, including its outer padding. Native tabs already take layout space. */
+export const WebTabBarHeight =
+  Spacing.three * 2 + Spacing.two * 2 + Spacing.one * 2 + 20;
+
+export const BottomTabInset = Platform.select({ ios: 50, android: 80, web: WebTabBarHeight }) ?? 0;
+export const FloatingTabInset = Platform.select({ web: WebTabBarHeight, default: 0 }) ?? 0;

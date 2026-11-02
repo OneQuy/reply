@@ -9,7 +9,7 @@ import { TagPill } from '@/components/tag-pill';
 import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
 import { WordingCard } from '@/components/wording-card';
-import { Spacing } from '@/constants/theme';
+import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 
@@ -30,8 +30,7 @@ export default function WordingScreen() {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // const addBarPaddingBottom = Spacing.two + BottomTabInset + insets.bottom;
-  const addBarPaddingBottom = Spacing.two + insets.bottom;
+  const addBarPaddingBottom = Spacing.two + FloatingTabInset + insets.bottom;
   const overlayClearance = 36 + Spacing.two + addBarPaddingBottom;
 
   const allTags = useMemo(() => {
