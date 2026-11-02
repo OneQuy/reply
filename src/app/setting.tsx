@@ -321,14 +321,29 @@ type PromptFieldProps = {
 function PromptField({ label, value, onChangeText, placeholder, editing, onEdit, onSave }: PromptFieldProps) {
   const theme = useTheme();
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const [folded, setFolded] = useState(true);
+  const [lineCount, setLineCount] = useState(0);
+  const displayValue = value.trim() ? value : placeholder;
 
   useEffect(() => {
     if (editing) {
+      setFolded(false);
       inputRef.current?.focus();
       return;
     }
     inputRef.current?.blur();
   }, [editing]);
+
+  const handleToggleFold = () => {
+    if (editing) return;
+    if (folded) {
+      setFolded(false);
+      return;
+    }
+    if (lineCount > 2) {
+      setFolded(true);
+    }
+  };
 
   return (
     <View style={styles.field}>
@@ -342,25 +357,35 @@ function PromptField({ label, value, onChangeText, placeholder, editing, onEdit,
           <ThemedText type="small">{editing ? 'Done' : 'Edit'}</ThemedText>
         </Pressable>
       </View>
-      <TextInput
-        ref={inputRef}
-        value={value}
-        onChangeText={onChangeText}
-        multiline
-        editable={editing}
-        textAlignVertical="top"
-        placeholder={placeholder}
-        placeholderTextColor={theme.textSecondary}
-        style={[
-          styles.input,
-          styles.prompt,
-          {
-            color: theme.text,
-            backgroundColor: theme.backgroundElement,
-            opacity: editing ? 1 : 0.7,
-          },
-        ]}
-      />
+      {editing ? (
+        <TextInput
+          ref={inputRef}
+          value={value}
+          onChangeText={onChangeText}
+          multiline
+          textAlignVertical="top"
+          placeholder={placeholder}
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, styles.prompt, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+        />
+      ) : (
+        <Pressable
+          onPress={handleToggleFold}
+          style={[styles.input, styles.prompt, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText
+            themeColor={value.trim() ? 'text' : 'textSecondary'}
+            numberOfLines={folded ? 2 : 0}
+            ellipsizeMode="tail"
+            onTextLayout={(event) => {
+              if (!folded) {
+                setLineCount(event.nativeEvent.lines.length);
+              }
+            }}
+            style={styles.promptText}>
+            {displayValue}
+          </ThemedText>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -457,7 +482,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   prompt: {
-    minHeight: 160,
+    minHeight: 52,
+  },
+  promptText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: 400,
+    opacity: 0.7,
   },
   button: {
     alignItems: 'center',
