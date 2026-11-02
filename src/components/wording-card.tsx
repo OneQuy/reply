@@ -135,9 +135,9 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
             style={({ pressed }) => [styles.addTag, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
             <Ionicons name="add" size={10} color={theme.textSecondary} />
           </Pressable>
+          <IconButton name="trash-outline" onPress={onDelete} disabled={loading} />
           <IconButton name="pencil-outline" onPress={onEdit} disabled={loading} />
           <IconButton name="pin-outline" onPress={onPin} disabled={loading} />
-          <IconButton name="trash-outline" onPress={onDelete} disabled={loading} />
           <IconButton name="color-wand-outline" onPress={() => void handleWording()} loading={loading && result === null} />
         </View>
       </View>
