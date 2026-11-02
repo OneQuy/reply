@@ -439,12 +439,19 @@ function PromptField({ label, value, onChangeText, placeholder, editing, onEdit,
           style={[styles.input, styles.prompt, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText
             themeColor={value.trim() ? 'text' : 'textSecondary'}
-            numberOfLines={folded ? 2 : 0}
+            numberOfLines={folded ? 2 : undefined}
             ellipsizeMode="tail"
-            onTextLayout={(event) => {
-              if (!folded) {
-                setLineCount(event.nativeEvent.lines.length);
+            onLayout={(event) => {
+              if (folded) return;
+              const height = event.nativeEvent.layout.height;
+              if (height > 0) {
+                setLineCount(Math.ceil((height - 1) / 22));
               }
+            }}
+            onTextLayout={(event) => {
+              if (folded) return;
+              const count = event.nativeEvent.lines?.length ?? 0;
+              if (count > 0) setLineCount(count);
             }}
             style={styles.promptText}>
             {displayValue}

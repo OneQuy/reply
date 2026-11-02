@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, AppState, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { IconButton } from '@/components/icon-button';
 import { TagEditorModal } from '@/components/tag-editor-modal';
@@ -75,30 +75,40 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
     }
   };
 
+  const tags = item.tags ?? [];
+  const folded = item.folded === true;
+
+  const handleTextSize = (height: number, nativeLines?: number) => {
+    if (folded) return;
+    const fromNative = nativeLines ?? 0;
+    const fromHeight = height > 0 ? Math.ceil((height - 1) / TEXT_LINE_HEIGHT) : 0;
+    const next = Math.max(fromNative, fromHeight);
+    if (next > 0) setLineCount(next);
+  };
+
   const handleToggleFold = () => {
-    if (item.folded) {
+    if (folded) {
       setItemFolded(item.id, false);
       return;
     }
-    if (lineCount > 2) {
+    const overflow = lineCount > 2 || item.text.split('\n').length > 2;
+    if (overflow) {
       setItemFolded(item.id, true);
     }
   };
-
-  const tags = item.tags ?? [];
-  const folded = item.folded === true;
 
   return (
     <View style={[styles.card, { width, backgroundColor: theme.backgroundElement }]}>
       <Pressable onPress={handleToggleFold}>
         <ThemedText
           style={styles.text}
-          numberOfLines={folded ? 2 : 0}
+          numberOfLines={folded ? 2 : undefined}
           ellipsizeMode="tail"
+          onLayout={(event: LayoutChangeEvent) => {
+            handleTextSize(event.nativeEvent.layout.height);
+          }}
           onTextLayout={(event) => {
-            if (!folded) {
-              setLineCount(event.nativeEvent.lines.length);
-            }
+            handleTextSize(0, event.nativeEvent.lines.length);
           }}>
           {item.text}
         </ThemedText>
@@ -145,6 +155,8 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
   );
 }
 
+const TEXT_LINE_HEIGHT = 15;
+
 const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
@@ -155,7 +167,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: TEXT_LINE_HEIGHT,
     fontWeight: 500,
   },
   footer: {

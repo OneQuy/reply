@@ -227,22 +227,32 @@ export function PasteActionScreen({
 
         <View style={styles.actions}>
           {showInput ? (
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Type text, or leave empty to use the clipboard."
-              placeholderTextColor={theme.textSecondary}
-              multiline
-              textAlignVertical="top"
-              editable={!loading}
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  backgroundColor: theme.backgroundElement,
-                },
-              ]}
-            />
+            <View style={[styles.inputWrap, { backgroundColor: theme.backgroundElement }]}>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Type text, or leave empty to use the clipboard."
+                placeholderTextColor={theme.textSecondary}
+                multiline
+                textAlignVertical="top"
+                editable={!loading}
+                style={[
+                  styles.input,
+                  inputText.length > 0 && styles.inputWithClear,
+                  { color: theme.text },
+                ]}
+              />
+              {inputText.length > 0 ? (
+                <Pressable
+                  onPress={() => setInputText('')}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear"
+                  style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}>
+                  <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                </Pressable>
+              ) : null}
+            </View>
           ) : null}
 
           {useInputSource ? (
@@ -351,13 +361,28 @@ const styles = StyleSheet.create({
   actions: {
     gap: Spacing.two,
   },
-  input: {
+  inputWrap: {
     height: INPUT_HEIGHT,
     borderRadius: 16,
+  },
+  input: {
+    flex: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
     lineHeight: INPUT_LINE_HEIGHT,
+  },
+  inputWithClear: {
+    paddingRight: 36,
+  },
+  clearButton: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButton: {
     borderRadius: 16,
