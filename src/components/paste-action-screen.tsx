@@ -127,8 +127,9 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
 
   const actionStyle = (action: ActionKind) => {
     const isFlashed = flashedAction === action && flash !== 'idle';
+    const idleBackground = action === 'again' ? theme.backgroundSelected : theme.backgroundElement;
     return {
-      backgroundColor: isFlashed ? (flash === 'success' ? '#22C55E' : '#F87171') : theme.backgroundElement,
+      backgroundColor: isFlashed ? (flash === 'success' ? '#22C55E' : '#F87171') : idleBackground,
       contentColor: isFlashed ? '#0B1B0E' : theme.text,
     };
   };
