@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { AppState, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { IconButton } from '@/components/icon-button';
 import { TagEditorModal } from '@/components/tag-editor-modal';
@@ -12,6 +12,7 @@ import { WordingResultModal } from '@/components/wording-result-modal';
 import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTheme } from '@/hooks/use-theme';
+import { showAlert } from '@/lib/alert';
 import { wordingText } from '@/lib/openrouter';
 import { type AppSettings, type WordingItem } from '@/types/app';
 
@@ -69,7 +70,7 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
         setResult(nextResult.text);
       }
     } catch (error) {
-      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
+      showAlert(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }

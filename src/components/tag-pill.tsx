@@ -22,7 +22,7 @@ export function TagPill({ label, selected, compact, tone = 'color', onPress, onR
   const colors =
     tone === 'neutral'
       ? selected
-        ? { backgroundColor: '#000000', color: '#FFFFFF' }
+        ? { backgroundColor: '#22C55E', color: '#0B1B0E' }
         : { backgroundColor: theme.backgroundSelected, color: theme.textSecondary }
       : getTagColor(label, scheme === 'dark');
 

@@ -4,7 +4,6 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   AppState,
   Keyboard,
   KeyboardAvoidingView,
@@ -28,6 +27,7 @@ import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
+import { showAlert } from '@/lib/alert';
 import { getReplyPromptForTag } from '@/lib/storage';
 import { wordingText } from '@/lib/openrouter';
 
@@ -154,7 +154,7 @@ export function PasteActionScreen({
       setSourceText(source);
       await requestFromSource(source, 'paste');
     } catch (error) {
-      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
+      showAlert(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
       setPendingAction(null);
@@ -168,7 +168,7 @@ export function PasteActionScreen({
     try {
       await requestFromSource(sourceText, 'again');
     } catch (error) {
-      Alert.alert('', error instanceof Error ? error.message : 'Something went wrong');
+      showAlert(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
       setPendingAction(null);
@@ -276,7 +276,7 @@ export function PasteActionScreen({
           ) : (
             <ClipboardPasteControl
               onPaste={(source) => void pasteSource(source)}
-              onEmpty={() => Alert.alert('', 'Clipboard is empty')}
+              onEmpty={() => showAlert('Clipboard is empty')}
               disabled={loading}
               loading={pendingAction === 'paste'}
               width={pasteButtonWidth}

@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { AppAlert } from '@/components/app-alert';
 import AppTabs from '@/components/app-tabs';
 import { AppStateProvider } from '@/context/app-state';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -28,6 +29,7 @@ function ThemedApp() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
       <AppTabs />
+      <AppAlert />
     </ThemeProvider>
   );
 }

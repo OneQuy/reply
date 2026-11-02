@@ -3,7 +3,6 @@ import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +21,7 @@ import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
+import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseFlashSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS } from '@/types/app';
@@ -148,7 +148,7 @@ export default function SettingScreen() {
       );
       setImportOpen(false);
     } catch {
-      Alert.alert('', 'Invalid JSON');
+      showAlert('Invalid JSON');
     }
   };
 
