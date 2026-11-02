@@ -19,6 +19,7 @@ type AppStateContextValue = {
   deleteItem: (id: string) => void;
   pinItem: (id: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
+  replaceData: (items: WordingItem[], settings: AppSettings) => void;
   recordRequest: (request: LastRequest) => void;
 };
 
@@ -108,6 +109,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const replaceData = useCallback(
+    (nextItems: WordingItem[], nextSettings: AppSettings) => {
+      persistItems(nextItems);
+      setSettings(nextSettings);
+      void saveSettings(nextSettings);
+    },
+    [persistItems],
+  );
+
   const recordRequest = useCallback((request: LastRequest) => {
     setLastRequest(request);
   }, []);
@@ -125,6 +135,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteItem,
       pinItem,
       updateSettings,
+      replaceData,
       recordRequest,
     }),
     [
@@ -139,6 +150,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteItem,
       pinItem,
       updateSettings,
+      replaceData,
       recordRequest,
     ],
   );

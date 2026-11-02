@@ -5,21 +5,45 @@ import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/ap
 const ITEMS_KEY = 'wording_items';
 const SETTINGS_KEY = 'app_settings';
 
+export function parseItems(value: unknown): WordingItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is WordingItem => Boolean(item && typeof item.id === 'string' && typeof item.text === 'string'))
+    .map((item) => ({
+      id: item.id,
+      text: item.text,
+      tags: normalizeTags(item.tags),
+      folded: item.folded === true,
+    }));
+}
+
+export function parseSettings(value: unknown): AppSettings {
+  const parsed = value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<AppSettings>) : {};
+  const { model, models } = parseModels(parsed);
+  return {
+    model,
+    models,
+    prompt: typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : DEFAULT_SETTINGS.prompt,
+    replyPrompt:
+      typeof parsed.replyPrompt === 'string' && parsed.replyPrompt.trim()
+        ? parsed.replyPrompt
+        : DEFAULT_SETTINGS.replyPrompt,
+    smoothPrompt:
+      typeof parsed.smoothPrompt === 'string' && parsed.smoothPrompt.trim()
+        ? parsed.smoothPrompt
+        : DEFAULT_SETTINGS.smoothPrompt,
+    replyTags: normalizeTags(parsed.replyTags),
+    replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
+    flashSeconds: parseFlashSeconds(parsed.flashSeconds),
+  };
+}
+
 export async function loadItems(): Promise<WordingItem[]> {
   const raw = await AsyncStorage.getItem(ITEMS_KEY);
   if (!raw) return [];
 
   try {
-    const parsed = JSON.parse(raw) as WordingItem[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string')
-      .map((item) => ({
-        id: item.id,
-        text: item.text,
-        tags: normalizeTags(item.tags),
-        folded: item.folded === true,
-      }));
+    return parseItems(JSON.parse(raw));
   } catch {
     return [];
   }
@@ -34,24 +58,7 @@ export async function loadSettings(): Promise<AppSettings> {
   if (!raw) return DEFAULT_SETTINGS;
 
   try {
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    const { model, models } = parseModels(parsed);
-    return {
-      model,
-      models,
-      prompt: typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : DEFAULT_SETTINGS.prompt,
-      replyPrompt:
-        typeof parsed.replyPrompt === 'string' && parsed.replyPrompt.trim()
-          ? parsed.replyPrompt
-          : DEFAULT_SETTINGS.replyPrompt,
-      smoothPrompt:
-        typeof parsed.smoothPrompt === 'string' && parsed.smoothPrompt.trim()
-          ? parsed.smoothPrompt
-          : DEFAULT_SETTINGS.smoothPrompt,
-      replyTags: normalizeTags(parsed.replyTags),
-      replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
-      flashSeconds: parseFlashSeconds(parsed.flashSeconds),
-    };
+    return parseSettings(JSON.parse(raw));
   } catch {
     return DEFAULT_SETTINGS;
   }

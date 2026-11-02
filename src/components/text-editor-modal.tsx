@@ -18,12 +18,23 @@ type TextEditorModalProps = {
   visible: boolean;
   title: string;
   initialValue: string;
+  placeholder?: string;
+  saveLabel?: string;
   showPaste?: boolean;
   onClose: () => void;
   onSave: (text: string) => void;
 };
 
-export function TextEditorModal({ visible, title, initialValue, showPaste = false, onClose, onSave }: TextEditorModalProps) {
+export function TextEditorModal({
+  visible,
+  title,
+  initialValue,
+  placeholder = 'Enter text',
+  saveLabel = 'Save',
+  showPaste = false,
+  onClose,
+  onSave,
+}: TextEditorModalProps) {
   const theme = useTheme();
   const [value, setValue] = useState(initialValue);
 
@@ -44,7 +55,7 @@ export function TextEditorModal({ visible, title, initialValue, showPaste = fals
           <TextInput
             value={value}
             onChangeText={setValue}
-            placeholder="Enter text"
+            placeholder={placeholder}
             placeholderTextColor={theme.textSecondary}
             multiline
             autoFocus
@@ -80,7 +91,7 @@ export function TextEditorModal({ visible, title, initialValue, showPaste = fals
                 onPress={() => onSave(value.trim())}
                 disabled={!canSave}
                 style={({ pressed }) => [styles.action, pressed && styles.pressed, !canSave && styles.disabled]}>
-                <ThemedText style={styles.saveLabel}>Save</ThemedText>
+                <ThemedText style={styles.saveLabel}>{saveLabel}</ThemedText>
               </Pressable>
             </View>
           </View>

@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,18 +15,20 @@ import {
 
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
+import { TextEditorModal } from '@/components/text-editor-modal';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
+import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseFlashSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS } from '@/types/app';
 
 export default function SettingScreen() {
   const theme = useTheme();
   const scrollRef = useTabScrollToTop();
-  const { settings, updateSettings } = useAppState();
+  const { items, settings, updateSettings, replaceData } = useAppState();
   const models = settings.models?.length ? settings.models : [settings.model];
   const [newModel, setNewModel] = useState('');
   const [prompt, setPrompt] = useState(settings.prompt);
@@ -40,6 +44,8 @@ export default function SettingScreen() {
   const [editingTagKey, setEditingTagKey] = useState<string | null>(null);
   const [tagPromptDraft, setTagPromptDraft] = useState('');
   const [tab, setTab] = useState<'general' | 'reply'>('general');
+  const [exportCopied, setExportCopied] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const replyTags = settings.replyTags ?? [];
   const defaultReplyPrompt = settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt;
 
@@ -101,16 +107,47 @@ export default function SettingScreen() {
     setTimeout(() => setFlashSaved(false), 1600);
   };
 
-  const handleReset = () => {
+  const applyImportedState = (nextPrompt: string, nextReplyPrompt: string, nextSmoothPrompt: string, nextFlash: number) => {
     setNewModel('');
-    setPrompt(DEFAULT_SETTINGS.prompt);
-    setReplyPrompt(DEFAULT_SETTINGS.replyPrompt);
-    setSmoothPrompt(DEFAULT_SETTINGS.smoothPrompt);
-    setFlashSeconds(String(DEFAULT_SETTINGS.flashSeconds));
+    setPrompt(nextPrompt);
+    setReplyPrompt(nextReplyPrompt);
+    setSmoothPrompt(nextSmoothPrompt);
+    setFlashSeconds(String(nextFlash));
     setEditingPrompts({ wording: false, reply: false, smooth: false });
     setEditingTagKey(null);
     setTagPromptDraft('');
+  };
+
+  const handleReset = () => {
+    applyImportedState(
+      DEFAULT_SETTINGS.prompt,
+      DEFAULT_SETTINGS.replyPrompt,
+      DEFAULT_SETTINGS.smoothPrompt,
+      DEFAULT_SETTINGS.flashSeconds,
+    );
     updateSettings(DEFAULT_SETTINGS);
+  };
+
+  const handleExport = async () => {
+    await Clipboard.setStringAsync(serializeBackup(items, settings));
+    setExportCopied(true);
+    setTimeout(() => setExportCopied(false), 1600);
+  };
+
+  const handleImport = (raw: string) => {
+    try {
+      const backup = parseBackup(raw);
+      replaceData(backup.items, backup.settings);
+      applyImportedState(
+        backup.settings.prompt,
+        backup.settings.replyPrompt,
+        backup.settings.smoothPrompt,
+        backup.settings.flashSeconds,
+      );
+      setImportOpen(false);
+    } catch {
+      Alert.alert('', 'Invalid JSON');
+    }
   };
 
   const handleEditTagPrompt = (tag: string) => {
@@ -253,6 +290,24 @@ export default function SettingScreen() {
                 />
               </View>
 
+              <View style={styles.field}>
+                <ThemedText type="smallBold">Data</ThemedText>
+                <View style={styles.addRow}>
+                  <Pressable
+                    onPress={() => void handleExport()}
+                    style={({ pressed }) => [styles.dataButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+                    <ThemedText style={exportCopied ? styles.savedLabel : undefined}>
+                      {exportCopied ? 'Copied' : 'Export'}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setImportOpen(true)}
+                    style={({ pressed }) => [styles.dataButton, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+                    <ThemedText>Import</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+
               <Pressable
                 onPress={handleReset}
                 style={({ pressed }) => [styles.button, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
@@ -304,6 +359,16 @@ export default function SettingScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      <TextEditorModal
+        visible={importOpen}
+        title="Import JSON"
+        initialValue=""
+        placeholder="Paste JSON"
+        saveLabel="Import"
+        showPaste
+        onClose={() => setImportOpen(false)}
+        onSave={handleImport}
+      />
     </Screen>
   );
 }
@@ -495,6 +560,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 12,
+  },
+  dataButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    minHeight: 42,
   },
   savedLabel: {
     color: '#16A34A',
