@@ -1,4 +1,3 @@
-import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -10,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { ClipboardPasteControl } from '@/components/clipboard-paste-control';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -35,13 +35,6 @@ export function TextEditorModal({ visible, title, initialValue, showPaste = fals
 
   const canSave = value.trim().length > 0;
 
-  const handlePaste = async () => {
-    const text = (await Clipboard.getStringAsync()).trim();
-    if (text) {
-      setValue(text);
-    }
-  };
-
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -66,9 +59,16 @@ export function TextEditorModal({ visible, title, initialValue, showPaste = fals
           />
           <View style={styles.actions}>
             {showPaste ? (
-              <Pressable onPress={() => void handlePaste()} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
-                <ThemedText style={styles.pasteLabel}>Paste</ThemedText>
-              </Pressable>
+              <ClipboardPasteControl
+                onPaste={setValue}
+                width={76}
+                height={32}
+                backgroundColor={theme.backgroundElement}
+                foregroundColor={theme.text}
+                displayMode="labelOnly"
+                cornerStyle="capsule"
+                filledFallback={false}
+              />
             ) : (
               <View />
             )}
@@ -126,9 +126,6 @@ const styles = StyleSheet.create({
   action: {
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
-  },
-  pasteLabel: {
-    fontWeight: 700,
   },
   saveLabel: {
     color: '#2B7FFF',

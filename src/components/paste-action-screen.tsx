@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ClipboardPasteControl } from '@/components/clipboard-paste-control';
 import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -26,7 +27,7 @@ type PasteActionScreenProps = {
 export function PasteActionScreen({ prompt, emptyText, showAgain = false }: PasteActionScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const { settings, recordRequest, addItem } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,7 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
   const scrollRef = useTabScrollToTop();
   const buttonHeight = Math.max(64, Math.round(height * 0.1));
   const againButtonHeight = Math.max(52, Math.round(buttonHeight * 0.75));
+  const pasteButtonWidth = Math.max(0, width - Spacing.three * 2);
 
   const clearFlash = useCallback(() => {
     if (timeoutRef.current) {
@@ -92,15 +94,11 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
     flashFor('success', action, settings.flashSeconds * 1000);
   };
 
-  const handlePaste = async () => {
+  const pasteSource = async (source: string) => {
     if (loading) return;
     setLoading(true);
     setPendingAction('paste');
     try {
-      const source = (await Clipboard.getStringAsync()).trim();
-      if (!source) {
-        throw new Error('Clipboard is empty');
-      }
       setSourceText(source);
       await requestFromSource(source, 'paste');
     } catch {
@@ -173,23 +171,17 @@ export function PasteActionScreen({ prompt, emptyText, showAgain = false }: Past
         </ScrollView>
 
         <View style={styles.actions}>
-          <Pressable
-            onPress={() => void handlePaste()}
+          <ClipboardPasteControl
+            onPaste={(source) => void pasteSource(source)}
+            onEmpty={() => flashFor('error', 'paste', 1600)}
             disabled={loading}
-            style={({ pressed }) => [
-              styles.actionButton,
-              { height: buttonHeight, backgroundColor: pasteStyle.backgroundColor },
-              pressed && !loading && styles.pressed,
-            ]}>
-            {pendingAction === 'paste' ? (
-              <ActivityIndicator color={theme.text} />
-            ) : (
-              <>
-                <Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />
-                <ThemedText style={[styles.actionLabel, { color: pasteStyle.contentColor }]}>Paste</ThemedText>
-              </>
-            )}
-          </Pressable>
+            loading={pendingAction === 'paste'}
+            width={pasteButtonWidth}
+            height={buttonHeight}
+            backgroundColor={pasteStyle.backgroundColor}
+            foregroundColor={pasteStyle.contentColor}
+            fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
+          />
 
           {showAgain && sourceText ? (
             <Pressable
