@@ -9,6 +9,7 @@ export default function ReplyScreen() {
     <PasteActionScreen
       prompt={settings.replyPrompt || DEFAULT_SETTINGS.replyPrompt}
       emptyText="Paste a post or comment to generate a reply."
+      showAgain
     />
   );
 }

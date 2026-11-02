@@ -8,31 +8,37 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LastRequestCost } from '@/components/last-request-cost';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { wordingText } from '@/lib/openrouter';
 
 type FlashState = 'idle' | 'success' | 'error';
+type ActionKind = 'paste' | 'again';
 
 type PasteActionScreenProps = {
   prompt: string;
   emptyText: string;
+  showAgain?: boolean;
 };
 
-export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps) {
+export function PasteActionScreen({ prompt, emptyText, showAgain = false }: PasteActionScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { settings, recordRequest, addItem } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ActionKind | null>(null);
+  const [flashedAction, setFlashedAction] = useState<ActionKind>('paste');
+  const [sourceText, setSourceText] = useState('');
   const [result, setResult] = useState('');
   const [added, setAdded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useTabScrollToTop();
   const buttonHeight = Math.max(64, Math.round(height * 0.1));
+  const againButtonHeight = Math.max(52, Math.round(buttonHeight * 0.75));
 
   const clearFlash = useCallback(() => {
     if (timeoutRef.current) {
@@ -65,10 +71,11 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
     return () => sub.remove();
   }, [clearFlash]);
 
-  const flashFor = (state: FlashState, duration: number) => {
+  const flashFor = (state: FlashState, action: ActionKind, duration: number) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
+    setFlashedAction(action);
     setFlash(state);
     timeoutRef.current = setTimeout(() => {
       setFlash('idle');
@@ -76,25 +83,54 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
     }, duration);
   };
 
+  const requestFromSource = async (source: string, action: ActionKind) => {
+    const nextResult = await wordingText(source, settings.model, prompt);
+    await Clipboard.setStringAsync(nextResult.text);
+    recordRequest({ cost: nextResult.cost });
+    setResult(nextResult.text);
+    setAdded(false);
+    flashFor('success', action, settings.flashSeconds * 1000);
+  };
+
   const handlePaste = async () => {
     if (loading) return;
     setLoading(true);
+    setPendingAction('paste');
     try {
       const source = (await Clipboard.getStringAsync()).trim();
       if (!source) {
         throw new Error('Clipboard is empty');
       }
-      const nextResult = await wordingText(source, settings.model, prompt);
-      await Clipboard.setStringAsync(nextResult.text);
-      recordRequest({ cost: nextResult.cost });
-      setResult(nextResult.text);
-      setAdded(false);
-      flashFor('success', settings.flashSeconds * 1000);
+      setSourceText(source);
+      await requestFromSource(source, 'paste');
     } catch {
-      flashFor('error', 1600);
+      flashFor('error', 'paste', 1600);
     } finally {
       setLoading(false);
+      setPendingAction(null);
     }
+  };
+
+  const handleAgain = async () => {
+    if (loading || !sourceText) return;
+    setLoading(true);
+    setPendingAction('again');
+    try {
+      await requestFromSource(sourceText, 'again');
+    } catch {
+      flashFor('error', 'again', 1600);
+    } finally {
+      setLoading(false);
+      setPendingAction(null);
+    }
+  };
+
+  const actionStyle = (action: ActionKind) => {
+    const isFlashed = flashedAction === action && flash !== 'idle';
+    return {
+      backgroundColor: isFlashed ? (flash === 'success' ? '#22C55E' : '#F87171') : theme.backgroundElement,
+      contentColor: isFlashed ? '#0B1B0E' : theme.text,
+    };
   };
 
   const handleAddToWording = () => {
@@ -103,13 +139,12 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
     setAdded(true);
   };
 
-  const backgroundColor =
-    flash === 'success' ? '#22C55E' : flash === 'error' ? '#F87171' : theme.backgroundElement;
-  const contentColor = flash === 'idle' ? theme.text : '#0B1B0E';
+  const pasteStyle = actionStyle('paste');
+  const againStyle = actionStyle('again');
 
   return (
     <Screen>
-      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + BottomTabInset + insets.bottom }]}>
+      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + insets.bottom }]}>
         <ScrollView
           ref={scrollRef}
           style={styles.result}
@@ -136,26 +171,48 @@ export function PasteActionScreen({ prompt, emptyText }: PasteActionScreenProps)
           )}
         </ScrollView>
 
-        <Pressable
-          onPress={() => void handlePaste()}
-          disabled={loading}
-          style={({ pressed }) => [
-            styles.pasteButton,
-            { height: buttonHeight, backgroundColor },
-            pressed && !loading && styles.pressed,
-          ]}>
-          {loading ? (
-            <ActivityIndicator color={theme.text} />
-          ) : (
-            <>
-              <Ionicons name="clipboard-outline" size={22} color={contentColor} />
-              <ThemedText style={[styles.pasteLabel, { color: contentColor }]}>Paste</ThemedText>
-            </>
-          )}
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            onPress={() => void handlePaste()}
+            disabled={loading}
+            style={({ pressed }) => [
+              styles.actionButton,
+              { height: buttonHeight, backgroundColor: pasteStyle.backgroundColor },
+              pressed && !loading && styles.pressed,
+            ]}>
+            {pendingAction === 'paste' ? (
+              <ActivityIndicator color={theme.text} />
+            ) : (
+              <>
+                <Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />
+                <ThemedText style={[styles.actionLabel, { color: pasteStyle.contentColor }]}>Paste</ThemedText>
+              </>
+            )}
+          </Pressable>
 
-        <View style={styles.bottomSpacer}>
-          <LastRequestCost />
+          {showAgain && sourceText ? (
+            <Pressable
+              onPress={() => void handleAgain()}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.actionButton,
+                { height: againButtonHeight, backgroundColor: againStyle.backgroundColor },
+                pressed && !loading && styles.pressed,
+              ]}>
+              {pendingAction === 'again' ? (
+                <ActivityIndicator color={theme.text} />
+              ) : (
+                <>
+                  <Ionicons name="refresh-outline" size={20} color={againStyle.contentColor} />
+                  <ThemedText style={[styles.actionLabel, { color: againStyle.contentColor }]}>Again</ThemedText>
+                </>
+              )}
+            </Pressable>
+          ) : null}
+
+          <View style={styles.costRow}>
+            <LastRequestCost />
+          </View>
         </View>
       </View>
     </Screen>
@@ -169,14 +226,17 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     gap: Spacing.three,
   },
-  pasteButton: {
+  actions: {
+    gap: Spacing.two,
+  },
+  actionButton: {
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  pasteLabel: {
+  actionLabel: {
     fontSize: 18,
     lineHeight: 24,
     fontWeight: 700,
@@ -188,8 +248,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-end',
   },
-  bottomSpacer: {
-    flex: 1,
+  costRow: {
+    minHeight: 16,
     justifyContent: 'flex-end',
   },
   resultBlock: {
