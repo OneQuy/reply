@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/app';
+import { DEFAULT_SETTINGS, type AppSettings, type AppTheme, type WordingItem } from '@/types/app';
 
 const ITEMS_KEY = 'wording_items';
 const SETTINGS_KEY = 'app_settings';
@@ -35,7 +35,12 @@ export function parseSettings(value: unknown): AppSettings {
     replyTags: normalizeTags(parsed.replyTags),
     replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
     flashSeconds: parseFlashSeconds(parsed.flashSeconds),
+    theme: parseTheme(parsed.theme),
   };
+}
+
+export function parseTheme(value: unknown): AppTheme {
+  return value === 'light' || value === 'dark' || value === 'system' ? value : DEFAULT_SETTINGS.theme;
 }
 
 export async function loadItems(): Promise<WordingItem[]> {

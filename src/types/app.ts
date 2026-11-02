@@ -5,6 +5,8 @@ export type WordingItem = {
   folded?: boolean;
 };
 
+export type AppTheme = 'light' | 'dark' | 'system';
+
 export type AppSettings = {
   model: string;
   models: string[];
@@ -14,6 +16,7 @@ export type AppSettings = {
   replyTagPrompts: Record<string, string>;
   smoothPrompt: string;
   flashSeconds: number;
+  theme: AppTheme;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -28,4 +31,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   smoothPrompt:
     'Smoothen this text and fix the grammar. Keep the original meaning and tone. Only return the corrected text, not anything else.',
   flashSeconds: 10,
+  theme: 'system',
 };

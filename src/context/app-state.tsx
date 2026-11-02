@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Appearance } from 'react-native';
+import * as SystemUI from 'expo-system-ui';
 
+import { Colors } from '@/constants/theme';
 import { loadItems, loadSettings, normalizeTags, saveItems, saveSettings } from '@/lib/storage';
 import { DEFAULT_SETTINGS, type AppSettings, type WordingItem } from '@/types/app';
 
@@ -51,6 +54,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof Appearance.setColorScheme === 'function') {
+      Appearance.setColorScheme(settings.theme === 'system' ? 'auto' : settings.theme);
+    }
+    const resolved =
+      settings.theme === 'dark' || (settings.theme === 'system' && Appearance.getColorScheme() === 'dark')
+        ? 'dark'
+        : 'light';
+    void SystemUI.setBackgroundColorAsync(Colors[resolved].background);
+  }, [settings.theme]);
 
   const persistItems = useCallback((next: WordingItem[]) => {
     setItems(next);
@@ -164,4 +178,8 @@ export function useAppState(): AppStateContextValue {
     throw new Error('useAppState must be used within AppStateProvider');
   }
   return context;
+}
+
+export function useAppStateOptional(): AppStateContextValue | null {
+  return useContext(AppStateContext);
 }

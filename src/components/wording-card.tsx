@@ -114,28 +114,30 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
         </ThemedText>
       </Pressable>
       <View style={styles.footer}>
-        <View style={styles.tags}>
-          {tags.map((tag, index) => (
-            <TagPill
-              key={`${tag}-${index}`}
-              label={tag}
-              compact
-              selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-              onPress={() => onTagPress(tag)}
-            />
-          ))}
+        {tags.length > 0 ? (
+          <View style={styles.tags}>
+            {tags.map((tag, index) => (
+              <TagPill
+                key={`${tag}-${index}`}
+                label={tag}
+                compact
+                selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                onPress={() => onTagPress(tag)}
+              />
+            ))}
+          </View>
+        ) : null}
+        <View style={styles.actions}>
           <Pressable
             onPress={() => setTagEditorOpen(true)}
             hitSlop={4}
             style={({ pressed }) => [styles.addTag, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
             <Ionicons name="add" size={10} color={theme.textSecondary} />
           </Pressable>
-        </View>
-        <View style={styles.actions}>
-          <IconButton name="color-wand-outline" onPress={() => void handleWording()} loading={loading && result === null} />
           <IconButton name="pencil-outline" onPress={onEdit} disabled={loading} />
           <IconButton name="pin-outline" onPress={onPin} disabled={loading} />
-          <IconButton name="trash-outline" onPress={onDelete} disabled={loading} danger />
+          <IconButton name="trash-outline" onPress={onDelete} disabled={loading} />
+          <IconButton name="color-wand-outline" onPress={() => void handleWording()} loading={loading && result === null} />
         </View>
       </View>
       <TagEditorModal

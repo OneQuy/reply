@@ -20,6 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseFlashSeconds } from '@/lib/storage';
@@ -46,6 +47,7 @@ export default function SettingScreen() {
   const [tab, setTab] = useState<'general' | 'reply'>('general');
   const [exportCopied, setExportCopied] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const selectedTheme = useColorScheme();
   const replyTags = settings.replyTags ?? [];
   const defaultReplyPrompt = settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt;
 
@@ -201,6 +203,33 @@ export default function SettingScreen() {
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {tab === 'general' ? (
             <>
+              <View style={styles.field}>
+                <ThemedText type="smallBold">Theme</ThemedText>
+                <View style={[styles.appearance, { backgroundColor: theme.backgroundElement }]}>
+                  {(['light', 'dark'] as const).map((name) => {
+                    const selected = selectedTheme === name;
+                    return (
+                      <Pressable
+                        key={name}
+                        accessibilityRole="button"
+                        accessibilityLabel={name === 'light' ? 'Light' : 'Dark'}
+                        onPress={() => updateSettings({ theme: name })}
+                        style={({ pressed }) => [
+                          styles.tab,
+                          selected && styles.tabSelected,
+                          pressed && !selected && styles.pressed,
+                        ]}>
+                        <ThemedText
+                          themeColor={selected ? 'text' : 'textSecondary'}
+                          style={[styles.tabLabel, selected && styles.tabLabelSelected]}>
+                          {name === 'light' ? 'Light' : 'Dark'}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
               <View style={styles.field}>
                 <ThemedText type="smallBold">Model</ThemedText>
                 <View style={styles.modelList}>
@@ -470,6 +499,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: Spacing.three,
     marginBottom: Spacing.two,
+    padding: 3,
+    borderRadius: 12,
+    gap: 3,
+  },
+  appearance: {
+    flexDirection: 'row',
     padding: 3,
     borderRadius: 12,
     gap: 3,
