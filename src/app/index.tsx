@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LastRequestCost } from '@/components/last-request-cost';
@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { WordingCard } from '@/components/wording-card';
 import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useContentWidth } from '@/hooks/use-content-width';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 
 const COLUMNS = 2;
@@ -25,7 +26,7 @@ type EditorState =
 export default function WordingScreen() {
   const insets = useSafeAreaInsets();
   const scrollRef = useTabScrollToTop();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const { ready, items, settings, addItem, updateItem, deleteItem, pinItem } = useAppState();
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);

@@ -7,25 +7,29 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
-    <Tabs>
-      <TabSlot style={styles.slot} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="wording" href="/" asChild>
-            <TabButton>Wording</TabButton>
-          </TabTrigger>
-          <TabTrigger name="reply" href="/reply" asChild>
-            <TabButton>Reply</TabButton>
-          </TabTrigger>
-          <TabTrigger name="smooth" href="/smooth" asChild>
-            <TabButton>Smooth</TabButton>
-          </TabTrigger>
-          <TabTrigger name="setting" href="/setting" asChild>
-            <TabButton>Setting</TabButton>
-          </TabTrigger>
-        </CustomTabList>
-      </TabList>
-    </Tabs>
+    <ThemedView style={styles.root}>
+      <View style={styles.shell}>
+        <Tabs style={styles.tabs}>
+          <TabSlot style={styles.slot} />
+          <TabList asChild>
+            <CustomTabList>
+              <TabTrigger name="wording" href="/" asChild>
+                <TabButton>Wording</TabButton>
+              </TabTrigger>
+              <TabTrigger name="reply" href="/reply" asChild>
+                <TabButton>Reply</TabButton>
+              </TabTrigger>
+              <TabTrigger name="smooth" href="/smooth" asChild>
+                <TabButton>Smooth</TabButton>
+              </TabTrigger>
+              <TabTrigger name="setting" href="/setting" asChild>
+                <TabButton>Setting</TabButton>
+              </TabTrigger>
+            </CustomTabList>
+          </TabList>
+        </Tabs>
+      </View>
+    </ThemedView>
   );
 }
 
@@ -52,6 +56,19 @@ function CustomTabList(props: TabListProps) {
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    width: '100%',
+  },
+  shell: {
+    flex: 1,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
+  tabs: {
+    flex: 1,
+  },
   slot: {
     height: '100%',
   },

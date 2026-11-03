@@ -25,6 +25,7 @@ import { TagPill } from '@/components/tag-pill';
 import { ThemedText } from '@/components/themed-text';
 import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useContentWidth } from '@/hooks/use-content-width';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
@@ -66,7 +67,8 @@ export function PasteActionScreen({
 }: PasteActionScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
+  const width = useContentWidth();
   const { settings, recordRequest, addItem, updateSettings } = useAppState();
   const [flash, setFlash] = useState<FlashState>('idle');
   const [loading, setLoading] = useState(false);
