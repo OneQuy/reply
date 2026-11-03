@@ -59,40 +59,49 @@ export function ClipboardPasteControl({
     emitPaste(data.text);
   };
 
-  if (loading) {
-    return (
-      <View style={[filledFallback ? styles.filled : styles.text, { width, height, backgroundColor: filledFallback ? backgroundColor : undefined }]}>
-        <ActivityIndicator color={foregroundColor} />
-      </View>
-    );
-  }
+  const useNative = Clipboard.isPasteButtonAvailable && width > 0 && height > 0;
 
-  if (Clipboard.isPasteButtonAvailable && width > 0 && height > 0) {
+  if (useNative) {
     return (
-      <Clipboard.ClipboardPasteButton
-        displayMode={displayMode}
-        cornerStyle={cornerStyle}
-        backgroundColor={backgroundColor}
-        foregroundColor={foregroundColor}
-        acceptedContentTypes={['plain-text', 'url']}
-        onPress={handleNativePaste}
-        pointerEvents={disabled ? 'none' : 'auto'}
-        style={{ width, height }}
-      />
+      <View style={{ width, height }}>
+        <Clipboard.ClipboardPasteButton
+          displayMode={displayMode}
+          cornerStyle={cornerStyle}
+          backgroundColor={backgroundColor}
+          foregroundColor={foregroundColor}
+          acceptedContentTypes={['plain-text', 'url']}
+          onPress={handleNativePaste}
+          pointerEvents={disabled || loading ? 'none' : 'auto'}
+          style={{ width, height }}
+        />
+        {loading ? (
+          <View style={[styles.loadingOverlay, { backgroundColor }]}>
+            <ActivityIndicator color={foregroundColor} />
+          </View>
+        ) : null}
+      </View>
     );
   }
 
   return (
     <Pressable
       onPress={() => void handleFallbackPaste()}
-      disabled={disabled}
+      disabled={disabled || loading}
       style={({ pressed }) => [
         filledFallback ? styles.filled : styles.text,
         filledFallback ? { width, height, backgroundColor } : undefined,
-        pressed && !disabled && styles.pressed,
+        pressed && !disabled && !loading && styles.pressed,
       ]}>
-      {fallbackIcon}
-      <ThemedText style={[filledFallback ? styles.filledLabel : styles.textLabel, { color: foregroundColor }]}>{fallbackLabel}</ThemedText>
+      {loading ? (
+        <ActivityIndicator color={foregroundColor} />
+      ) : (
+        <>
+          {fallbackIcon}
+          <ThemedText style={[filledFallback ? styles.filledLabel : styles.textLabel, { color: foregroundColor }]}>
+            {fallbackLabel}
+          </ThemedText>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -118,6 +127,12 @@ const styles = StyleSheet.create({
   },
   textLabel: {
     fontWeight: 700,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.7,

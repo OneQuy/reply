@@ -78,6 +78,7 @@ export function PasteActionScreen({
   const [added, setAdded] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
+  const [pasteControlKey, setPasteControlKey] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useTabScrollToTop();
   const buttonHeight = Math.max(64, Math.round(height * 0.1));
@@ -102,6 +103,7 @@ export function PasteActionScreen({
 
   useFocusEffect(
     useCallback(() => {
+      setPasteControlKey((current) => current + 1);
       return () => clearFlash();
     }, [clearFlash]),
   );
@@ -276,6 +278,7 @@ export function PasteActionScreen({
             </Pressable>
           ) : (
             <ClipboardPasteControl
+              key={pasteControlKey}
               onPaste={(source) => void pasteSource(source)}
               onEmpty={() => showAlert('Clipboard is empty')}
               disabled={loading}

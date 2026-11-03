@@ -1,4 +1,6 @@
 npx expo export --platform web
+
 npx eas-cli@latest deploy
+
 # production:
 npx eas-cli@latest deploy --prod
