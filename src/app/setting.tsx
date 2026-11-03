@@ -19,12 +19,11 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseCostWarnAt, parseFlashSeconds } from '@/lib/storage';
-import { DEFAULT_SETTINGS, RANDOM_MODEL } from '@/types/app';
+import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppTheme } from '@/types/app';
 
 export default function SettingScreen() {
   const theme = useTheme();
@@ -49,9 +48,13 @@ export default function SettingScreen() {
   const [tab, setTab] = useState<'general' | 'reply'>('general');
   const [exportCopied, setExportCopied] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const selectedTheme = useColorScheme();
   const replyTags = settings.replyTags ?? [];
   const defaultReplyPrompt = settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt;
+  const themeOptions: { value: AppTheme; label: string }[] = [
+    { value: 'system', label: 'Auto' },
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+  ];
 
   useEffect(() => {
     setFlashSeconds(String(settings.flashSeconds));
@@ -229,14 +232,14 @@ export default function SettingScreen() {
               <View style={styles.field}>
                 <ThemedText type="smallBold">Theme</ThemedText>
                 <View style={[styles.appearance, { backgroundColor: theme.backgroundElement }]}>
-                  {(['light', 'dark'] as const).map((name) => {
-                    const selected = selectedTheme === name;
+                  {themeOptions.map((option) => {
+                    const selected = (settings.theme ?? DEFAULT_SETTINGS.theme) === option.value;
                     return (
                       <Pressable
-                        key={name}
+                        key={option.value}
                         accessibilityRole="button"
-                        accessibilityLabel={name === 'light' ? 'Light' : 'Dark'}
-                        onPress={() => updateSettings({ theme: name })}
+                        accessibilityLabel={option.label}
+                        onPress={() => updateSettings({ theme: option.value })}
                         style={({ pressed }) => [
                           styles.tab,
                           selected && styles.tabSelected,
@@ -245,7 +248,7 @@ export default function SettingScreen() {
                         <ThemedText
                           themeColor={selected ? 'text' : 'textSecondary'}
                           style={[styles.tabLabel, selected && styles.tabLabelSelected]}>
-                          {name === 'light' ? 'Light' : 'Dark'}
+                          {option.label}
                         </ThemedText>
                       </Pressable>
                     );
