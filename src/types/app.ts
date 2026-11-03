@@ -18,6 +18,7 @@ export type AppSettings = {
   replyTagPrompts: Record<string, string>;
   smoothPrompt: string;
   flashSeconds: number;
+  costWarnAt: number;
   theme: AppTheme;
 };
 
@@ -33,5 +34,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   smoothPrompt:
     'Smoothen this text and fix the grammar. Keep the original meaning and tone. Only return the corrected text, not anything else.',
   flashSeconds: 10,
+  costWarnAt: 0.0001,
   theme: 'system',
 };

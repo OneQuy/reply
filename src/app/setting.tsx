@@ -23,7 +23,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
-import { parseFlashSeconds } from '@/lib/storage';
+import { parseCostWarnAt, parseFlashSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS, RANDOM_MODEL } from '@/types/app';
 
 export default function SettingScreen() {
@@ -37,6 +37,8 @@ export default function SettingScreen() {
   const [smoothPrompt, setSmoothPrompt] = useState(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
   const [flashSeconds, setFlashSeconds] = useState(String(settings.flashSeconds));
   const [flashSaved, setFlashSaved] = useState(false);
+  const [costWarnAt, setCostWarnAt] = useState(String(settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt));
+  const [costWarnSaved, setCostWarnSaved] = useState(false);
   const [editingPrompts, setEditingPrompts] = useState({
     wording: false,
     reply: false,
@@ -54,6 +56,10 @@ export default function SettingScreen() {
   useEffect(() => {
     setFlashSeconds(String(settings.flashSeconds));
   }, [settings.flashSeconds]);
+
+  useEffect(() => {
+    setCostWarnAt(String(settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt));
+  }, [settings.costWarnAt]);
 
   const handleSelectModel = (name: string) => {
     if (name === settings.model) return;
@@ -109,12 +115,27 @@ export default function SettingScreen() {
     setTimeout(() => setFlashSaved(false), 1600);
   };
 
-  const applyImportedState = (nextPrompt: string, nextReplyPrompt: string, nextSmoothPrompt: string, nextFlash: number) => {
+  const handleSaveCostWarn = () => {
+    const next = parseCostWarnAt(costWarnAt);
+    setCostWarnAt(String(next));
+    updateSettings({ costWarnAt: next });
+    setCostWarnSaved(true);
+    setTimeout(() => setCostWarnSaved(false), 1600);
+  };
+
+  const applyImportedState = (
+    nextPrompt: string,
+    nextReplyPrompt: string,
+    nextSmoothPrompt: string,
+    nextFlash: number,
+    nextCostWarnAt: number,
+  ) => {
     setNewModel('');
     setPrompt(nextPrompt);
     setReplyPrompt(nextReplyPrompt);
     setSmoothPrompt(nextSmoothPrompt);
     setFlashSeconds(String(nextFlash));
+    setCostWarnAt(String(nextCostWarnAt));
     setEditingPrompts({ wording: false, reply: false, smooth: false });
     setEditingTagKey(null);
     setTagPromptDraft('');
@@ -126,6 +147,7 @@ export default function SettingScreen() {
       DEFAULT_SETTINGS.replyPrompt,
       DEFAULT_SETTINGS.smoothPrompt,
       DEFAULT_SETTINGS.flashSeconds,
+      DEFAULT_SETTINGS.costWarnAt,
     );
     updateSettings(DEFAULT_SETTINGS);
   };
@@ -145,6 +167,7 @@ export default function SettingScreen() {
         backup.settings.replyPrompt,
         backup.settings.smoothPrompt,
         backup.settings.flashSeconds,
+        backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
       );
       setImportOpen(false);
     } catch {
@@ -242,7 +265,7 @@ export default function SettingScreen() {
                     ]}>
                     <Ionicons
                       name={settings.model === RANDOM_MODEL ? 'radio-button-on' : 'radio-button-off'}
-                      size={20}
+                      size={16}
                       color={settings.model === RANDOM_MODEL ? theme.text : theme.textSecondary}
                     />
                     <ThemedText style={styles.modelName}>Random</ThemedText>
@@ -260,7 +283,7 @@ export default function SettingScreen() {
                         ]}>
                         <Ionicons
                           name={selected ? 'radio-button-on' : 'radio-button-off'}
-                          size={20}
+                          size={16}
                           color={selected ? theme.text : theme.textSecondary}
                         />
                         <ThemedText style={styles.modelName}>{name}</ThemedText>
@@ -328,6 +351,28 @@ export default function SettingScreen() {
                   onChangeText={setFlashSeconds}
                   keyboardType="number-pad"
                   placeholder={String(DEFAULT_SETTINGS.flashSeconds)}
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <View style={styles.fieldHeader}>
+                  <ThemedText type="smallBold">Cost warn at ($)</ThemedText>
+                  <Pressable
+                    onPress={handleSaveCostWarn}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+                    <ThemedText type="small" style={costWarnSaved ? styles.savedLabel : undefined}>
+                      {costWarnSaved ? 'Saved' : 'Save'}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                <TextInput
+                  value={costWarnAt}
+                  onChangeText={setCostWarnAt}
+                  keyboardType="decimal-pad"
+                  placeholder={String(DEFAULT_SETTINGS.costWarnAt)}
                   placeholderTextColor={theme.textSecondary}
                   style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
                 />
@@ -543,7 +588,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.five + BottomTabInset,
+    paddingBottom: Spacing.six + Spacing.five + BottomTabInset,
     gap: Spacing.four,
   },
   field: {
@@ -563,21 +608,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
   },
   modelList: {
-    gap: Spacing.one,
+    gap: 4,
   },
   modelRow: {
-    minHeight: 48,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    minHeight: 32,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
   modelName: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 18,
   },
   addRow: {
     flexDirection: 'row',
