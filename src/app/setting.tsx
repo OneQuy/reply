@@ -22,7 +22,7 @@ import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
-import { parseCostWarnAt, parseFlashSeconds } from '@/lib/storage';
+import { parseCostWarnAt, parseFlashSeconds, parseRequestTimeoutSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppTheme } from '@/types/app';
 
 export default function SettingScreen() {
@@ -38,6 +38,10 @@ export default function SettingScreen() {
   const [flashSaved, setFlashSaved] = useState(false);
   const [costWarnAt, setCostWarnAt] = useState(String(settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt));
   const [costWarnSaved, setCostWarnSaved] = useState(false);
+  const [requestTimeoutSeconds, setRequestTimeoutSeconds] = useState(
+    String(settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds),
+  );
+  const [requestTimeoutSaved, setRequestTimeoutSaved] = useState(false);
   const [editingPrompts, setEditingPrompts] = useState({
     wording: false,
     reply: false,
@@ -63,6 +67,10 @@ export default function SettingScreen() {
   useEffect(() => {
     setCostWarnAt(String(settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt));
   }, [settings.costWarnAt]);
+
+  useEffect(() => {
+    setRequestTimeoutSeconds(String(settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds));
+  }, [settings.requestTimeoutSeconds]);
 
   const handleSelectModel = (name: string) => {
     if (name === settings.model) return;
@@ -126,12 +134,21 @@ export default function SettingScreen() {
     setTimeout(() => setCostWarnSaved(false), 1600);
   };
 
+  const handleSaveRequestTimeout = () => {
+    const next = parseRequestTimeoutSeconds(requestTimeoutSeconds);
+    setRequestTimeoutSeconds(String(next));
+    updateSettings({ requestTimeoutSeconds: next });
+    setRequestTimeoutSaved(true);
+    setTimeout(() => setRequestTimeoutSaved(false), 1600);
+  };
+
   const applyImportedState = (
     nextPrompt: string,
     nextReplyPrompt: string,
     nextSmoothPrompt: string,
     nextFlash: number,
     nextCostWarnAt: number,
+    nextRequestTimeoutSeconds: number,
   ) => {
     setNewModel('');
     setPrompt(nextPrompt);
@@ -139,6 +156,7 @@ export default function SettingScreen() {
     setSmoothPrompt(nextSmoothPrompt);
     setFlashSeconds(String(nextFlash));
     setCostWarnAt(String(nextCostWarnAt));
+    setRequestTimeoutSeconds(String(nextRequestTimeoutSeconds));
     setEditingPrompts({ wording: false, reply: false, smooth: false });
     setEditingTagKey(null);
     setTagPromptDraft('');
@@ -151,6 +169,7 @@ export default function SettingScreen() {
       DEFAULT_SETTINGS.smoothPrompt,
       DEFAULT_SETTINGS.flashSeconds,
       DEFAULT_SETTINGS.costWarnAt,
+      DEFAULT_SETTINGS.requestTimeoutSeconds,
     );
     updateSettings(DEFAULT_SETTINGS);
   };
@@ -171,6 +190,7 @@ export default function SettingScreen() {
         backup.settings.smoothPrompt,
         backup.settings.flashSeconds,
         backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
+        backup.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
       );
       setImportOpen(false);
     } catch {
@@ -376,6 +396,28 @@ export default function SettingScreen() {
                   onChangeText={setCostWarnAt}
                   keyboardType="decimal-pad"
                   placeholder={String(DEFAULT_SETTINGS.costWarnAt)}
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <View style={styles.fieldHeader}>
+                  <ThemedText type="smallBold">Request timeout (seconds)</ThemedText>
+                  <Pressable
+                    onPress={handleSaveRequestTimeout}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+                    <ThemedText type="small" style={requestTimeoutSaved ? styles.savedLabel : undefined}>
+                      {requestTimeoutSaved ? 'Saved' : 'Save'}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                <TextInput
+                  value={requestTimeoutSeconds}
+                  onChangeText={setRequestTimeoutSeconds}
+                  keyboardType="number-pad"
+                  placeholder={String(DEFAULT_SETTINGS.requestTimeoutSeconds)}
                   placeholderTextColor={theme.textSecondary}
                   style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
                 />

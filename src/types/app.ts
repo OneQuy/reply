@@ -19,6 +19,7 @@ export type AppSettings = {
   smoothPrompt: string;
   flashSeconds: number;
   costWarnAt: number;
+  requestTimeoutSeconds: number;
   theme: AppTheme;
 };
 
@@ -35,5 +36,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     'Smoothen this text and fix the grammar. Keep the original meaning and tone. Only return the corrected text, not anything else.',
   flashSeconds: 10,
   costWarnAt: 0.0001,
+  requestTimeoutSeconds: 7,
   theme: 'system',
 };

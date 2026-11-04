@@ -31,6 +31,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { wordingText } from '@/lib/openrouter';
 import { getReplyPromptForTag, resolveOpenRouterModel } from '@/lib/storage';
+import { DEFAULT_SETTINGS } from '@/types/app';
 
 type FlashState = 'idle' | 'success';
 type ActionKind = 'paste' | 'again';
@@ -163,7 +164,12 @@ function PasteActionScreenBody({
 
   const requestFromSource = async (source: string, action: ActionKind) => {
     const model = resolveOpenRouterModel(settings);
-    const nextResult = await wordingText(source, model, activePrompt);
+    const nextResult = await wordingText(
+      source,
+      model,
+      activePrompt,
+      settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
+    );
     await Clipboard.setStringAsync(nextResult.text);
     recordRequest({ cost: nextResult.cost, model });
     setResult(nextResult.text);

@@ -36,6 +36,7 @@ export function parseSettings(value: unknown): AppSettings {
     replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
     flashSeconds: parseFlashSeconds(parsed.flashSeconds),
     costWarnAt: parseCostWarnAt(parsed.costWarnAt),
+    requestTimeoutSeconds: parseRequestTimeoutSeconds(parsed.requestTimeoutSeconds),
     theme: parseTheme(parsed.theme),
   };
 }
@@ -88,6 +89,14 @@ export function parseCostWarnAt(value: unknown): number {
     return DEFAULT_SETTINGS.costWarnAt;
   }
   return parsed;
+}
+
+export function parseRequestTimeoutSeconds(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return DEFAULT_SETTINGS.requestTimeoutSeconds;
+  }
+  return Math.round(parsed);
 }
 
 export function parseTagPrompts(value: unknown): Record<string, string> {
