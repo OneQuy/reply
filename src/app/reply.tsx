@@ -10,6 +10,7 @@ export default function ReplyScreen() {
       prompt={settings.replyPrompt || DEFAULT_SETTINGS.replyPrompt}
       emptyText="Paste a post or comment to generate a reply."
       showAgain
+      showInput
       showTags
     />
   );
