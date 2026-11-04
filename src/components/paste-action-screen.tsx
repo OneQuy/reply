@@ -58,7 +58,28 @@ function getResultTextStyle(text: string) {
   return styles.resultText;
 }
 
-export function PasteActionScreen({
+export function PasteActionScreen(props: PasteActionScreenProps) {
+  const theme = useTheme();
+  const [screenKey, setScreenKey] = useState(0);
+
+  return (
+    <Screen>
+      <View style={styles.flex}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reload"
+          hitSlop={8}
+          onPress={() => setScreenKey((current) => current + 1)}
+          style={({ pressed }) => [styles.reloadButton, pressed && styles.pressed]}>
+          <Ionicons name="reload-outline" size={18} color={theme.textSecondary} />
+        </Pressable>
+        <PasteActionScreenBody key={screenKey} {...props} />
+      </View>
+    </Screen>
+  );
+}
+
+function PasteActionScreenBody({
   prompt,
   emptyText,
   showAgain = false,
@@ -201,145 +222,145 @@ export function PasteActionScreen({
   const useInputSource = showInput && inputSource.length > 0;
 
   return (
-    <Screen>
+    <>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + FloatingTabInset + insets.bottom }]}>
-        <ScrollView
-          ref={scrollRef}
-          style={styles.result}
-          contentContainerStyle={styles.resultContent}
-          keyboardShouldPersistTaps="handled">
-          {result ? (
-            <View style={styles.resultBlock}>
-              <ThemedText style={getResultTextStyle(result)}>{result}</ThemedText>
-              <Pressable
-                onPress={handleAddToWording}
-                style={({ pressed }) => [
-                  styles.addWordingButton,
-                  { backgroundColor: added ? '#22C55E' : theme.backgroundSelected },
-                  pressed && !added && styles.pressed,
-                ]}>
-                <Ionicons name={added ? 'checkmark' : 'add'} size={14} color={added ? '#0B1B0E' : theme.text} />
-                <ThemedText type="small" style={added ? styles.addedLabel : undefined}>
-                  {added ? 'Added' : 'Add to Wording'}
-                </ThemedText>
-              </Pressable>
-            </View>
-          ) : (
-            <ThemedText themeColor="textSecondary">{emptyText}</ThemedText>
-          )}
-        </ScrollView>
-
-        <View style={styles.actions}>
-          {showInput ? (
-            <View style={[styles.inputWrap, { backgroundColor: theme.backgroundElement }]}>
-              <TextInput
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type text, or leave empty to use the clipboard."
-                placeholderTextColor={theme.textSecondary}
-                multiline
-                textAlignVertical="top"
-                editable={!loading}
-                style={[
-                  styles.input,
-                  inputText.length > 0 && styles.inputWithClear,
-                  { color: theme.text },
-                ]}
-              />
-              {inputText.length > 0 ? (
+        <View collapsable={false} style={[styles.body, { paddingBottom: Spacing.three + FloatingTabInset + insets.bottom }]}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.result}
+            contentContainerStyle={styles.resultContent}
+            keyboardShouldPersistTaps="handled">
+            {result ? (
+              <View style={styles.resultBlock}>
+                <ThemedText style={getResultTextStyle(result)}>{result}</ThemedText>
                 <Pressable
-                  onPress={() => setInputText('')}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear"
-                  style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}>
-                  <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                  onPress={handleAddToWording}
+                  style={({ pressed }) => [
+                    styles.addWordingButton,
+                    { backgroundColor: added ? '#22C55E' : theme.backgroundSelected },
+                    pressed && !added && styles.pressed,
+                  ]}>
+                  <Ionicons name={added ? 'checkmark' : 'add'} size={14} color={added ? '#0B1B0E' : theme.text} />
+                  <ThemedText type="small" style={added ? styles.addedLabel : undefined}>
+                    {added ? 'Added' : 'Add to Wording'}
+                  </ThemedText>
                 </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+              </View>
+            ) : (
+              <ThemedText themeColor="textSecondary">{emptyText}</ThemedText>
+            )}
+          </ScrollView>
 
-          {useInputSource ? (
-            <Pressable
-              onPress={() => void pasteSource(inputSource)}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.actionButton,
-                { height: buttonHeight, backgroundColor: pasteStyle.backgroundColor },
-                pressed && !loading && styles.pressed,
-              ]}>
-              {pendingAction === 'paste' ? (
-                <ActivityIndicator color={theme.text} />
-              ) : (
-                <>
-                  <Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />
-                  <ThemedText style={[styles.actionLabel, { color: pasteStyle.contentColor }]}>Paste</ThemedText>
-                </>
-              )}
-            </Pressable>
-          ) : (
-            <ClipboardPasteControl
-              key={pasteControlKey}
-              onPaste={(source) => void pasteSource(source)}
-              onEmpty={() => showAlert('Clipboard is empty')}
-              disabled={loading}
-              loading={pendingAction === 'paste'}
-              width={pasteButtonWidth}
-              height={buttonHeight}
-              backgroundColor={pasteStyle.backgroundColor}
-              foregroundColor={pasteStyle.contentColor}
-              fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
-            />
-          )}
-
-          {showTags ? (
-            <View style={styles.tagRow}>
-              {replyTags.map((tag) => (
-                <TagPill
-                  key={tag}
-                  label={tag}
-                  tone="neutral"
-                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                  onPress={() =>
-                    setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))
-                  }
+          <View style={styles.actions}>
+            {showInput ? (
+              <View style={[styles.inputWrap, { backgroundColor: theme.backgroundElement }]}>
+                <TextInput
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder="Type text, or leave empty to use the clipboard."
+                  placeholderTextColor={theme.textSecondary}
+                  multiline
+                  textAlignVertical="top"
+                  editable={!loading}
+                  style={[
+                    styles.input,
+                    inputText.length > 0 && styles.inputWithClear,
+                    { color: theme.text },
+                  ]}
                 />
-              ))}
+                {inputText.length > 0 ? (
+                  <Pressable
+                    onPress={() => setInputText('')}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear"
+                    style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}>
+                    <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+
+            {useInputSource ? (
               <Pressable
-                onPress={() => setTagEditorOpen(true)}
-                hitSlop={4}
-                style={({ pressed }) => [styles.addTag, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
-                <Ionicons name="add" size={14} color={theme.textSecondary} />
+                onPress={() => void pasteSource(inputSource)}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  { height: buttonHeight, backgroundColor: pasteStyle.backgroundColor },
+                  pressed && !loading && styles.pressed,
+                ]}>
+                {pendingAction === 'paste' ? (
+                  <ActivityIndicator color={theme.text} />
+                ) : (
+                  <>
+                    <Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />
+                    <ThemedText style={[styles.actionLabel, { color: pasteStyle.contentColor }]}>Paste</ThemedText>
+                  </>
+                )}
               </Pressable>
+            ) : (
+              <ClipboardPasteControl
+                key={pasteControlKey}
+                onPaste={(source) => void pasteSource(source)}
+                onEmpty={() => showAlert('Clipboard is empty')}
+                disabled={loading}
+                loading={pendingAction === 'paste'}
+                width={pasteButtonWidth}
+                height={buttonHeight}
+                backgroundColor={pasteStyle.backgroundColor}
+                foregroundColor={pasteStyle.contentColor}
+                fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
+              />
+            )}
+
+            {showTags ? (
+              <View style={styles.tagRow}>
+                {replyTags.map((tag) => (
+                  <TagPill
+                    key={tag}
+                    label={tag}
+                    tone="neutral"
+                    selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                    onPress={() =>
+                      setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))
+                    }
+                  />
+                ))}
+                <Pressable
+                  onPress={() => setTagEditorOpen(true)}
+                  hitSlop={4}
+                  style={({ pressed }) => [styles.addTag, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+                  <Ionicons name="add" size={14} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+            ) : null}
+
+            {showAgain && sourceText ? (
+              <Pressable
+                onPress={() => void handleAgain()}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  { height: againButtonHeight, backgroundColor: againStyle.backgroundColor },
+                  pressed && !loading && styles.pressed,
+                ]}>
+                {pendingAction === 'again' ? (
+                  <ActivityIndicator color={theme.text} />
+                ) : (
+                  <>
+                    <Ionicons name="refresh-outline" size={20} color={againStyle.contentColor} />
+                    <ThemedText style={[styles.actionLabel, { color: againStyle.contentColor }]}>Again</ThemedText>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+
+            <View style={styles.costRow}>
+              <LastRequestCost />
             </View>
-          ) : null}
-
-          {showAgain && sourceText ? (
-            <Pressable
-              onPress={() => void handleAgain()}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.actionButton,
-                { height: againButtonHeight, backgroundColor: againStyle.backgroundColor },
-                pressed && !loading && styles.pressed,
-              ]}>
-              {pendingAction === 'again' ? (
-                <ActivityIndicator color={theme.text} />
-              ) : (
-                <>
-                  <Ionicons name="refresh-outline" size={20} color={againStyle.contentColor} />
-                  <ThemedText style={[styles.actionLabel, { color: againStyle.contentColor }]}>Again</ThemedText>
-                </>
-              )}
-            </Pressable>
-          ) : null}
-
-          <View style={styles.costRow}>
-            <LastRequestCost />
           </View>
         </View>
-      </View>
       </KeyboardAvoidingView>
       {showTags ? (
         <TagEditorModal
@@ -350,13 +371,24 @@ export function PasteActionScreen({
           onSave={(tags) => updateSettings({ replyTags: tags })}
         />
       ) : null}
-    </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  reloadButton: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.three,
+    zIndex: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   body: {
     flex: 1,
