@@ -25,6 +25,7 @@ import { TagPill } from '@/components/tag-pill';
 import { ThemedText } from '@/components/themed-text';
 import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useContentWidth } from '@/hooks/use-content-width';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
@@ -88,6 +89,7 @@ function PasteActionScreenBody({
   showTags = false,
 }: PasteActionScreenProps) {
   const theme = useTheme();
+  const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const width = useContentWidth();
@@ -228,6 +230,22 @@ function PasteActionScreenBody({
   const againStyle = actionStyle('again');
   const inputSource = inputText.trim();
   const useInputSource = showInput && inputSource.length > 0;
+  const inputBackground =
+    inputText.length > 0
+      ? colorScheme === 'dark'
+        ? '#3F3A1A'
+        : '#FEF9C3'
+      : theme.backgroundElement;
+
+  const pasteIntoInput = async () => {
+    if (loading) return;
+    const text = (await Clipboard.getStringAsync()).trim();
+    if (!text) {
+      showAlert('Clipboard is empty');
+      return;
+    }
+    setInputText(text);
+  };
 
   return (
     <>
@@ -261,7 +279,7 @@ function PasteActionScreenBody({
 
           <View style={styles.actions}>
             {showInput ? (
-              <View style={[styles.inputWrap, { backgroundColor: theme.backgroundElement }]}>
+              <View style={[styles.inputWrap, { backgroundColor: inputBackground }]}>
                 <TextInput
                   value={inputText}
                   onChangeText={setInputText}
@@ -272,20 +290,31 @@ function PasteActionScreenBody({
                   editable={!loading}
                   style={[
                     styles.input,
-                    inputText.length > 0 && styles.inputWithClear,
+                    inputText.length > 0 ? styles.inputWithActions : styles.inputWithPaste,
                     { color: theme.text },
                   ]}
                 />
-                {inputText.length > 0 ? (
+                <View style={styles.inputActions}>
                   <Pressable
-                    onPress={() => setInputText('')}
+                    onPress={() => void pasteIntoInput()}
                     hitSlop={6}
+                    disabled={loading}
                     accessibilityRole="button"
-                    accessibilityLabel="Clear"
-                    style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}>
-                    <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                    accessibilityLabel="Paste"
+                    style={({ pressed }) => [styles.inputActionButton, pressed && !loading && styles.pressed]}>
+                    <Ionicons name="clipboard-outline" size={18} color={theme.textSecondary} />
                   </Pressable>
-                ) : null}
+                  {inputText.length > 0 ? (
+                    <Pressable
+                      onPress={() => setInputText('')}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear"
+                      style={({ pressed }) => [styles.inputActionButton, pressed && styles.pressed]}>
+                      <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             ) : null}
 
@@ -418,13 +447,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: INPUT_LINE_HEIGHT,
   },
-  inputWithClear: {
+  inputWithPaste: {
     paddingRight: 36,
   },
-  clearButton: {
+  inputWithActions: {
+    paddingRight: 60,
+  },
+  inputActions: {
     position: 'absolute',
     top: Spacing.two,
     right: Spacing.two,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+  },
+  inputActionButton: {
     width: 24,
     height: 24,
     alignItems: 'center',
