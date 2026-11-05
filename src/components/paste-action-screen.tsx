@@ -179,6 +179,7 @@ function PasteActionScreenBody({
 
   const pasteSource = async (source: string) => {
     if (loading) return;
+    clearFlash();
     Keyboard.dismiss();
     setLoading(true);
     setPendingAction('paste');
@@ -195,6 +196,7 @@ function PasteActionScreenBody({
 
   const handleAgain = async () => {
     if (loading || !sourceText) return;
+    clearFlash();
     setLoading(true);
     setPendingAction('again');
     try {
