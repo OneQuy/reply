@@ -33,7 +33,6 @@ export default function SettingScreen() {
   const [newModel, setNewModel] = useState('');
   const [prompt, setPrompt] = useState(settings.prompt);
   const [replyPrompt, setReplyPrompt] = useState(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
-  const [smoothPrompt, setSmoothPrompt] = useState(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
   const [flashSeconds, setFlashSeconds] = useState(String(settings.flashSeconds));
   const [flashSaved, setFlashSaved] = useState(false);
   const [costWarnAt, setCostWarnAt] = useState(String(settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt));
@@ -45,7 +44,6 @@ export default function SettingScreen() {
   const [editingPrompts, setEditingPrompts] = useState({
     wording: false,
     reply: false,
-    smooth: false,
   });
   const [editingTagKey, setEditingTagKey] = useState<string | null>(null);
   const [tagPromptDraft, setTagPromptDraft] = useState('');
@@ -97,7 +95,6 @@ export default function SettingScreen() {
   const handleEditPrompt = (key: keyof typeof editingPrompts) => {
     if (key === 'wording') setPrompt(settings.prompt);
     if (key === 'reply') setReplyPrompt(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt);
-    if (key === 'smooth') setSmoothPrompt(settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt);
     setEditingPrompts((current) => ({ ...current, [key]: true }));
   };
 
@@ -106,14 +103,10 @@ export default function SettingScreen() {
       const next = prompt.trim() || DEFAULT_SETTINGS.prompt;
       setPrompt(next);
       updateSettings({ prompt: next });
-    } else if (key === 'reply') {
+    } else {
       const next = replyPrompt.trim() || DEFAULT_SETTINGS.replyPrompt;
       setReplyPrompt(next);
       updateSettings({ replyPrompt: next });
-    } else {
-      const next = smoothPrompt.trim() || DEFAULT_SETTINGS.smoothPrompt;
-      setSmoothPrompt(next);
-      updateSettings({ smoothPrompt: next });
     }
     setEditingPrompts((current) => ({ ...current, [key]: false }));
   };
@@ -145,7 +138,6 @@ export default function SettingScreen() {
   const applyImportedState = (
     nextPrompt: string,
     nextReplyPrompt: string,
-    nextSmoothPrompt: string,
     nextFlash: number,
     nextCostWarnAt: number,
     nextRequestTimeoutSeconds: number,
@@ -153,11 +145,10 @@ export default function SettingScreen() {
     setNewModel('');
     setPrompt(nextPrompt);
     setReplyPrompt(nextReplyPrompt);
-    setSmoothPrompt(nextSmoothPrompt);
     setFlashSeconds(String(nextFlash));
     setCostWarnAt(String(nextCostWarnAt));
     setRequestTimeoutSeconds(String(nextRequestTimeoutSeconds));
-    setEditingPrompts({ wording: false, reply: false, smooth: false });
+    setEditingPrompts({ wording: false, reply: false });
     setEditingTagKey(null);
     setTagPromptDraft('');
   };
@@ -166,7 +157,6 @@ export default function SettingScreen() {
     applyImportedState(
       DEFAULT_SETTINGS.prompt,
       DEFAULT_SETTINGS.replyPrompt,
-      DEFAULT_SETTINGS.smoothPrompt,
       DEFAULT_SETTINGS.flashSeconds,
       DEFAULT_SETTINGS.costWarnAt,
       DEFAULT_SETTINGS.requestTimeoutSeconds,
@@ -187,7 +177,6 @@ export default function SettingScreen() {
       applyImportedState(
         backup.settings.prompt,
         backup.settings.replyPrompt,
-        backup.settings.smoothPrompt,
         backup.settings.flashSeconds,
         backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
         backup.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
@@ -345,16 +334,6 @@ export default function SettingScreen() {
                 editing={editingPrompts.wording}
                 onEdit={() => handleEditPrompt('wording')}
                 onSave={() => handleSavePrompt('wording')}
-              />
-
-              <PromptField
-                label="Smooth prompt"
-                value={editingPrompts.smooth ? smoothPrompt : (settings.smoothPrompt ?? DEFAULT_SETTINGS.smoothPrompt)}
-                onChangeText={setSmoothPrompt}
-                placeholder={DEFAULT_SETTINGS.smoothPrompt}
-                editing={editingPrompts.smooth}
-                onEdit={() => handleEditPrompt('smooth')}
-                onSave={() => handleSavePrompt('smooth')}
               />
 
               <View style={styles.field}>

@@ -16,7 +16,6 @@ export type AppSettings = {
   replyPrompt: string;
   replyTags: string[];
   replyTagPrompts: Record<string, string>;
-  smoothPrompt: string;
   flashSeconds: number;
   costWarnAt: number;
   requestTimeoutSeconds: number;
@@ -32,8 +31,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     'This is a post/comment on social. Reply it as a comment. The reply should be helpful if they need help, or fun if there is place for joke etc depend on the situation of that text. And add @elebean_app as a music stats app as smooth as possible. Only return the text reply. Not anything else. Shortly. Prefer less than 20 words. But never over 500 chars',
   replyTags: [],
   replyTagPrompts: {},
-  smoothPrompt:
-    'Smoothen this text and fix the grammar. Keep the original meaning and tone. Only return the corrected text, not anything else.',
   flashSeconds: 10,
   costWarnAt: 0.0001,
   requestTimeoutSeconds: 7,

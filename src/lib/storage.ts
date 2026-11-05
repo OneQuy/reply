@@ -28,10 +28,6 @@ export function parseSettings(value: unknown): AppSettings {
       typeof parsed.replyPrompt === 'string' && parsed.replyPrompt.trim()
         ? parsed.replyPrompt
         : DEFAULT_SETTINGS.replyPrompt,
-    smoothPrompt:
-      typeof parsed.smoothPrompt === 'string' && parsed.smoothPrompt.trim()
-        ? parsed.smoothPrompt
-        : DEFAULT_SETTINGS.smoothPrompt,
     replyTags: normalizeTags(parsed.replyTags),
     replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
     flashSeconds: parseFlashSeconds(parsed.flashSeconds),

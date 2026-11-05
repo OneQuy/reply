@@ -16,15 +16,12 @@ export default function AppTabs() {
               <TabTrigger name="wording" href="/" asChild>
                 <TabButton>Wording</TabButton>
               </TabTrigger>
-              <TabTrigger name="reply" href="/reply" asChild>
-                <TabButton>Reply</TabButton>
-              </TabTrigger>
-              <TabTrigger name="smooth" href="/smooth" asChild>
-                <TabButton>Smooth</TabButton>
-              </TabTrigger>
-              <TabTrigger name="setting" href="/setting" asChild>
-                <TabButton>Setting</TabButton>
-              </TabTrigger>
+          <TabTrigger name="reply" href="/reply" asChild>
+            <TabButton>Reply</TabButton>
+          </TabTrigger>
+          <TabTrigger name="setting" href="/setting" asChild>
+            <TabButton>Setting</TabButton>
+          </TabTrigger>
             </CustomTabList>
           </TabList>
         </Tabs>

@@ -28,14 +28,6 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="smooth">
-        <NativeTabs.Trigger.Label>Smooth</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'wand.and.stars', selected: 'wand.and.stars' }}
-          md={{ default: 'auto_fix_high', selected: 'auto_fix_high' }}
-        />
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="setting">
         <NativeTabs.Trigger.Label>Setting</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
