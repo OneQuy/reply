@@ -228,6 +228,7 @@ function PasteActionScreenBody({
 
   const pasteStyle = actionStyle('paste');
   const againStyle = actionStyle('again');
+  const pasteFlashed = flashedAction === 'paste' && flash === 'success';
   const inputSource = inputText.trim();
   const useInputSource = showInput && inputSource.length > 0;
   const inputBackground =
@@ -345,6 +346,7 @@ function PasteActionScreenBody({
                 loading={pendingAction === 'paste'}
                 width={pasteButtonWidth}
                 height={buttonHeight}
+                highlighted={pasteFlashed}
                 backgroundColor={pasteStyle.backgroundColor}
                 foregroundColor={pasteStyle.contentColor}
                 fallbackIcon={<Ionicons name="clipboard-outline" size={22} color={pasteStyle.contentColor} />}
