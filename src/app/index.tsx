@@ -84,6 +84,14 @@ export default function WordingScreen() {
     setEditor({ mode: 'closed' });
   };
 
+  const selectTagFilter = (tag: string | null) => {
+    setSelectedTag((current) => {
+      if (tag === null) return null;
+      return current?.toLowerCase() === tag.toLowerCase() ? null : tag;
+    });
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   return (
     <Screen>
       <View collapsable={false} style={styles.gridArea}>
@@ -117,7 +125,7 @@ export default function WordingScreen() {
                       width={cardWidth}
                       settings={settings}
                       selectedTag={selectedTag}
-                      onTagPress={(tag) => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
+                      onTagPress={(tag) => selectTagFilter(tag)}
                       onEdit={() => setEditor({ mode: 'edit', id: item.id, text: item.text })}
                       onPin={() => pinItem(item.id)}
                       onDelete={() => deleteItem(item.id)}
@@ -158,9 +166,7 @@ export default function WordingScreen() {
                     key={tag}
                     label={tag}
                     selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                    onPress={() =>
-                      setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))
-                    }
+                    onPress={() => selectTagFilter(tag)}
                   />
                 ))}
               </View>
