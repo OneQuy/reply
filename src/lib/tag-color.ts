@@ -1,3 +1,5 @@
+import type { TagRgb } from '@/types/app';
+
 type TagColor = {
   backgroundColor: string;
   color: string;
@@ -50,7 +52,63 @@ function hashTag(tag: string): number {
   return hash >>> 0;
 }
 
-export function getTagColor(tag: string, dark: boolean): TagColor {
+export function clampRgbChannel(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(255, Math.max(1, Math.round(value)));
+}
+
+export function randomTagRgb(): TagRgb {
+  return {
+    r: Math.floor(Math.random() * 255) + 1,
+    g: Math.floor(Math.random() * 255) + 1,
+    b: Math.floor(Math.random() * 255) + 1,
+  };
+}
+
+export function normalizeTagRgb(value: unknown): TagRgb | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const data = value as Record<string, unknown>;
+  const r = typeof data.r === 'number' ? data.r : typeof data.r === 'string' ? Number(data.r) : NaN;
+  const g = typeof data.g === 'number' ? data.g : typeof data.g === 'string' ? Number(data.g) : NaN;
+  const b = typeof data.b === 'number' ? data.b : typeof data.b === 'string' ? Number(data.b) : NaN;
+  if (![r, g, b].every((channel) => Number.isFinite(channel))) return null;
+  return {
+    r: clampRgbChannel(r),
+    g: clampRgbChannel(g),
+    b: clampRgbChannel(b),
+  };
+}
+
+export function parseTagColors(value: unknown): Record<string, TagRgb> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const colors: Record<string, TagRgb> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    const tag = key.trim().toLowerCase();
+    const rgb = normalizeTagRgb(entry);
+    if (!tag || !rgb) continue;
+    colors[tag] = rgb;
+  }
+  return colors;
+}
+
+export function rgbToCss({ r, g, b }: TagRgb): string {
+  return `rgb(${clampRgbChannel(r)}, ${clampRgbChannel(g)}, ${clampRgbChannel(b)})`;
+}
+
+export function contrastTextForRgb({ r, g, b }: TagRgb): string {
+  const luminance = (0.299 * clampRgbChannel(r) + 0.587 * clampRgbChannel(g) + 0.114 * clampRgbChannel(b)) / 255;
+  return luminance > 0.6 ? '#1A1A1A' : '#FFFFFF';
+}
+
+export function colorFromRgb(rgb: TagRgb): TagColor {
+  return {
+    backgroundColor: rgbToCss(rgb),
+    color: contrastTextForRgb(rgb),
+  };
+}
+
+export function getTagColor(tag: string, dark: boolean, custom?: TagRgb | null): TagColor {
+  if (custom) return colorFromRgb(custom);
   const palette = dark ? DARK_TAG_COLORS : LIGHT_TAG_COLORS;
   return palette[hashTag(tag) % palette.length];
 }

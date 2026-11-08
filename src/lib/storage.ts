@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { parseTagColors } from '@/lib/tag-color';
 import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppSettings, type AppTheme, type WordingItem } from '@/types/app';
 
 const ITEMS_KEY = 'wording_items';
@@ -30,6 +31,7 @@ export function parseSettings(value: unknown): AppSettings {
         : DEFAULT_SETTINGS.replyPrompt,
     replyTags: normalizeTags(parsed.replyTags),
     replyTagPrompts: parseTagPrompts(parsed.replyTagPrompts),
+    tagColors: parseTagColors(parsed.tagColors),
     flashSeconds: parseFlashSeconds(parsed.flashSeconds),
     costWarnAt: parseCostWarnAt(parsed.costWarnAt),
     requestTimeoutSeconds: parseRequestTimeoutSeconds(parsed.requestTimeoutSeconds),

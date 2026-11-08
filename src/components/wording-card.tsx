@@ -30,7 +30,7 @@ type WordingCardProps = {
 
 export function WordingCard({ item, width, settings, selectedTag, onTagPress, onEdit, onPin, onDelete }: WordingCardProps) {
   const theme = useTheme();
-  const { recordRequest, updateItemTags, setItemFolded } = useAppState();
+  const { settings: appSettings, recordRequest, updateItemTags, updateSettings, setItemFolded } = useAppState();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
@@ -151,8 +151,17 @@ export function WordingCard({ item, width, settings, selectedTag, onTagPress, on
       <TagEditorModal
         visible={tagEditorOpen}
         tags={tags}
+        tagColors={appSettings.tagColors}
         onClose={() => setTagEditorOpen(false)}
-        onSave={(nextTags) => updateItemTags(item.id, nextTags)}
+        onSave={(nextTags, nextColors) => {
+          updateItemTags(item.id, nextTags);
+          updateSettings({
+            tagColors: {
+              ...appSettings.tagColors,
+              ...nextColors,
+            },
+          });
+        }}
       />
       <WordingResultModal
         visible={result !== null}

@@ -3,28 +3,42 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useAppState } from '@/context/app-state';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { getTagColor } from '@/lib/tag-color';
+import type { TagRgb } from '@/types/app';
 
 type TagPillProps = {
   label: string;
   selected?: boolean;
   compact?: boolean;
   tone?: 'color' | 'neutral';
+  /** Override settings.tagColors for this render (e.g. editor draft). */
+  customColor?: TagRgb | null;
   onPress?: () => void;
   onRemove?: () => void;
 };
 
-export function TagPill({ label, selected, compact, tone = 'color', onPress, onRemove }: TagPillProps) {
+export function TagPill({
+  label,
+  selected,
+  compact,
+  tone = 'color',
+  customColor,
+  onPress,
+  onRemove,
+}: TagPillProps) {
   const theme = useTheme();
   const scheme = useColorScheme();
+  const { settings } = useAppState();
+  const storedColor = settings.tagColors?.[label.toLowerCase()] ?? null;
   const colors =
     tone === 'neutral'
       ? selected
         ? { backgroundColor: '#22C55E', color: '#0B1B0E' }
         : { backgroundColor: theme.backgroundSelected, color: theme.textSecondary }
-      : getTagColor(label, scheme === 'dark');
+      : getTagColor(label, scheme === 'dark', customColor ?? storedColor);
 
   return (
     <Pressable
@@ -56,8 +70,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.half,
-    // paddingHorizontal: Spacing.two,
-    // paddingVertical: 4,
     padding: 2,
     borderRadius: 999,
     maxWidth: '100%',
