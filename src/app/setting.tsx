@@ -25,6 +25,13 @@ import { parseBackup, serializeBackup } from '@/lib/backup';
 import { parseCostWarnAt, parseFlashSeconds, parseRequestTimeoutSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppTheme } from '@/types/app';
 
+const HANDLE_ELEBEAN = '@elebean_app';
+const HANDLE_MUSIC = '@elebeanmusicapp';
+
+function replaceHandleInText(text: string, from: string, to: string) {
+  return text.split(from).join(to);
+}
+
 export default function SettingScreen() {
   const theme = useTheme();
   const scrollRef = useTabScrollToTop();
@@ -205,6 +212,45 @@ export default function SettingScreen() {
     setEditingTagKey(null);
   };
 
+  const handleSelectAppHandle = (target: typeof HANDLE_ELEBEAN | typeof HANDLE_MUSIC) => {
+    const from = target === HANDLE_MUSIC ? HANDLE_ELEBEAN : HANDLE_MUSIC;
+    const nextPrompt = replaceHandleInText(settings.prompt, from, target);
+    const nextReplyPrompt = replaceHandleInText(
+      settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt,
+      from,
+      target,
+    );
+    const nextTagPrompts: Record<string, string> = {};
+    for (const [key, value] of Object.entries(settings.replyTagPrompts ?? {})) {
+      nextTagPrompts[key] = replaceHandleInText(value, from, target);
+    }
+    const nextItems = items.map((item) => ({
+      ...item,
+      text: replaceHandleInText(item.text, from, target),
+    }));
+
+    setPrompt(nextPrompt);
+    setReplyPrompt(nextReplyPrompt);
+    if (editingTagKey) {
+      setTagPromptDraft(replaceHandleInText(tagPromptDraft, from, target));
+    }
+    replaceData(nextItems, {
+      ...settings,
+      prompt: nextPrompt,
+      replyPrompt: nextReplyPrompt,
+      replyTagPrompts: nextTagPrompts,
+    });
+  };
+
+  const activeAppHandle = [
+    settings.prompt,
+    settings.replyPrompt,
+    ...Object.values(settings.replyTagPrompts ?? {}),
+    ...items.map((item) => item.text),
+  ].some((text) => text.includes(HANDLE_MUSIC))
+    ? HANDLE_MUSIC
+    : HANDLE_ELEBEAN;
+
   return (
     <Screen
       title="Setting"
@@ -335,6 +381,34 @@ export default function SettingScreen() {
                 onEdit={() => handleEditPrompt('wording')}
                 onSave={() => handleSavePrompt('wording')}
               />
+
+              <View style={styles.field}>
+                <ThemedText type="smallBold">App mention</ThemedText>
+                <View style={[styles.appearance, { backgroundColor: theme.backgroundElement }]}>
+                  {([HANDLE_ELEBEAN, HANDLE_MUSIC] as const).map((handle) => {
+                    const selected = activeAppHandle === handle;
+                    return (
+                      <Pressable
+                        key={handle}
+                        accessibilityRole="button"
+                        accessibilityLabel={handle}
+                        onPress={() => handleSelectAppHandle(handle)}
+                        style={({ pressed }) => [
+                          styles.tab,
+                          selected && styles.tabSelected,
+                          pressed && !selected && styles.pressed,
+                        ]}>
+                        <ThemedText
+                          themeColor={selected ? 'text' : 'textSecondary'}
+                          style={[styles.tabLabel, selected && styles.tabLabelSelected]}
+                          numberOfLines={1}>
+                          {handle}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
 
               <View style={styles.field}>
                 <View style={styles.fieldHeader}>

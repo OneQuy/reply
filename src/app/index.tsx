@@ -32,7 +32,8 @@ export default function WordingScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const addBarPaddingBottom = Spacing.two + FloatingTabInset + insets.bottom;
-  const overlayClearance = 36 + Spacing.two + addBarPaddingBottom;
+  const [bottomOverlayHeight, setBottomOverlayHeight] = useState(0);
+  const overlayClearance = Math.max(36 + Spacing.two + addBarPaddingBottom, bottomOverlayHeight);
 
   const allTags = useMemo(() => {
     const seen = new Set<string>();
@@ -83,18 +84,6 @@ export default function WordingScreen() {
 
   return (
     <Screen>
-      {allTags.length > 0 ? (
-        <View style={styles.filterBar}>
-          {allTags.map((tag) => (
-            <TagPill
-              key={tag}
-              label={tag}
-              selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-              onPress={() => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
-            />
-          ))}
-        </View>
-      ) : null}
       <View collapsable={false} style={styles.gridArea}>
         <ScrollView
           ref={scrollRef}
@@ -138,15 +127,32 @@ export default function WordingScreen() {
           )}
         </ScrollView>
 
-        <View pointerEvents="box-none" style={[styles.addBar, { paddingBottom: addBarPaddingBottom }]}>
-          <View style={styles.costSlot} pointerEvents="box-none">
-            <LastRequestCost />
+        <View
+          pointerEvents="box-none"
+          style={[styles.bottomOverlay, { paddingBottom: addBarPaddingBottom }]}
+          onLayout={(event) => setBottomOverlayHeight(event.nativeEvent.layout.height)}>
+          {allTags.length > 0 ? (
+            <View style={styles.filterBar}>
+              {allTags.map((tag) => (
+                <TagPill
+                  key={tag}
+                  label={tag}
+                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                  onPress={() => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
+                />
+              ))}
+            </View>
+          ) : null}
+          <View style={styles.addBar} pointerEvents="box-none">
+            <View style={styles.costSlot} pointerEvents="box-none">
+              <LastRequestCost />
+            </View>
+            <Pressable
+              onPress={() => setEditor({ mode: 'add' })}
+              style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
+              <Ionicons name="add" size={20} color="#ffffff" />
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => setEditor({ mode: 'add' })}
-            style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-            <Ionicons name="add" size={20} color="#ffffff" />
-          </Pressable>
         </View>
       </View>
 
@@ -167,8 +173,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.one,
-    paddingHorizontal: GRID_PADDING,
-    paddingTop: Spacing.two,
     paddingBottom: Spacing.one,
   },
   gridArea: {
@@ -190,15 +194,18 @@ const styles = StyleSheet.create({
   column: {
     gap: GRID_GAP,
   },
-  addBar: {
+  bottomOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: GRID_PADDING,
     paddingTop: Spacing.two,
+    gap: Spacing.one,
+  },
+  addBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.two,
   },
   costSlot: {
