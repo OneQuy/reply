@@ -25,13 +25,55 @@ import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
 import { fetchLatestBackup, setLatestBackup } from '@/lib/jsonbin';
 import { parseCostWarnAt, parseFlashSeconds, parseRequestTimeoutSeconds } from '@/lib/storage';
-import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppTheme } from '@/types/app';
+import {
+  DEFAULT_SETTINGS,
+  RANDOM_MODEL,
+  type AppSettings,
+  type AppTheme,
+  type WordingItem,
+} from '@/types/app';
 
 const HANDLE_ELEBEAN = '@elebean_app';
 const HANDLE_MUSIC = '@elebeanmusicapp';
+type AppHandle = typeof HANDLE_ELEBEAN | typeof HANDLE_MUSIC;
 
 function replaceHandleInText(text: string, from: string, to: string) {
   return text.split(from).join(to);
+}
+
+function detectActiveAppHandle(items: WordingItem[], settings: AppSettings): AppHandle {
+  const texts = [
+    settings.prompt,
+    settings.replyPrompt,
+    ...Object.values(settings.replyTagPrompts ?? {}),
+    ...items.map((item) => item.text),
+  ];
+  return texts.some((text) => text.includes(HANDLE_MUSIC)) ? HANDLE_MUSIC : HANDLE_ELEBEAN;
+}
+
+function applyAppHandle(
+  items: WordingItem[],
+  settings: AppSettings,
+  target: AppHandle,
+): { items: WordingItem[]; settings: AppSettings } {
+  const from = target === HANDLE_MUSIC ? HANDLE_ELEBEAN : HANDLE_MUSIC;
+  const nextTagPrompts: Record<string, string> = {};
+  for (const [key, value] of Object.entries(settings.replyTagPrompts ?? {})) {
+    nextTagPrompts[key] = replaceHandleInText(value, from, target);
+  }
+
+  return {
+    items: items.map((item) => ({
+      ...item,
+      text: replaceHandleInText(item.text, from, target),
+    })),
+    settings: {
+      ...settings,
+      prompt: replaceHandleInText(settings.prompt, from, target),
+      replyPrompt: replaceHandleInText(settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt, from, target),
+      replyTagPrompts: nextTagPrompts,
+    },
+  };
 }
 
 export default function SettingScreen() {
@@ -182,17 +224,28 @@ export default function SettingScreen() {
     setTimeout(() => setExportCopied(false), 1600);
   };
 
+  const activeAppHandle = detectActiveAppHandle(items, settings);
+
+  const applyBackupKeepingHandle = (
+    backupItems: WordingItem[],
+    backupSettings: AppSettings,
+    keepHandle: AppHandle,
+  ) => {
+    const next = applyAppHandle(backupItems, backupSettings, keepHandle);
+    replaceData(next.items, next.settings);
+    applyImportedState(
+      next.settings.prompt,
+      next.settings.replyPrompt,
+      next.settings.flashSeconds,
+      next.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
+      next.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
+    );
+  };
+
   const handleImport = (raw: string) => {
     try {
       const backup = parseBackup(raw);
-      replaceData(backup.items, backup.settings);
-      applyImportedState(
-        backup.settings.prompt,
-        backup.settings.replyPrompt,
-        backup.settings.flashSeconds,
-        backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
-        backup.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
-      );
+      applyBackupKeepingHandle(backup.items, backup.settings, activeAppHandle);
       setImportOpen(false);
     } catch {
       showAlert('Invalid JSON');
@@ -215,17 +268,11 @@ export default function SettingScreen() {
 
   const handleSync = async () => {
     if (syncBusy) return;
+    const keepHandle = activeAppHandle;
     setSyncBusy('sync');
     try {
       const backup = await fetchLatestBackup();
-      replaceData(backup.items, backup.settings);
-      applyImportedState(
-        backup.settings.prompt,
-        backup.settings.replyPrompt,
-        backup.settings.flashSeconds,
-        backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
-        backup.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
-      );
+      applyBackupKeepingHandle(backup.items, backup.settings, keepHandle);
       setSyncDone(true);
       setTimeout(() => setSyncDone(false), 1600);
     } catch (error) {
@@ -253,44 +300,16 @@ export default function SettingScreen() {
     setEditingTagKey(null);
   };
 
-  const handleSelectAppHandle = (target: typeof HANDLE_ELEBEAN | typeof HANDLE_MUSIC) => {
-    const from = target === HANDLE_MUSIC ? HANDLE_ELEBEAN : HANDLE_MUSIC;
-    const nextPrompt = replaceHandleInText(settings.prompt, from, target);
-    const nextReplyPrompt = replaceHandleInText(
-      settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt,
-      from,
-      target,
-    );
-    const nextTagPrompts: Record<string, string> = {};
-    for (const [key, value] of Object.entries(settings.replyTagPrompts ?? {})) {
-      nextTagPrompts[key] = replaceHandleInText(value, from, target);
-    }
-    const nextItems = items.map((item) => ({
-      ...item,
-      text: replaceHandleInText(item.text, from, target),
-    }));
-
-    setPrompt(nextPrompt);
-    setReplyPrompt(nextReplyPrompt);
+  const handleSelectAppHandle = (target: AppHandle) => {
+    const next = applyAppHandle(items, settings, target);
+    setPrompt(next.settings.prompt);
+    setReplyPrompt(next.settings.replyPrompt);
     if (editingTagKey) {
+      const from = target === HANDLE_MUSIC ? HANDLE_ELEBEAN : HANDLE_MUSIC;
       setTagPromptDraft(replaceHandleInText(tagPromptDraft, from, target));
     }
-    replaceData(nextItems, {
-      ...settings,
-      prompt: nextPrompt,
-      replyPrompt: nextReplyPrompt,
-      replyTagPrompts: nextTagPrompts,
-    });
+    replaceData(next.items, next.settings);
   };
-
-  const activeAppHandle = [
-    settings.prompt,
-    settings.replyPrompt,
-    ...Object.values(settings.replyTagPrompts ?? {}),
-    ...items.map((item) => item.text),
-  ].some((text) => text.includes(HANDLE_MUSIC))
-    ? HANDLE_MUSIC
-    : HANDLE_ELEBEAN;
 
   return (
     <Screen
