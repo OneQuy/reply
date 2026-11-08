@@ -1,6 +1,16 @@
+# optional if you want dashboard env instead of local .env
+npx eas-cli@latest env:pull --environment production
+
+npx expo export --platform web
+npx eas-cli@latest deploy --prod --environment production
+
+
+===================
+
 npx expo export --platform web
 
 npx eas-cli@latest deploy
 
 # production:
 npx eas-cli@latest deploy --prod
+

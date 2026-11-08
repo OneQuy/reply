@@ -41,8 +41,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "v": "node scripts/bump-version.js",
-    "export:web": "expo export --platform web",
-    "deploy:web": "expo export --platform web && eas deploy --prod --environment production"
+    "export:web": "expo export --platform web --clear",
+    "deploy:web": "expo export --platform web --clear && eas deploy --prod --export-dir dist --environment production"
   },
   "private": true
 }

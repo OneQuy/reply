@@ -16,16 +16,20 @@ function readExtraString(key: string): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function readPublicEnv(name: 'EXPO_PUBLIC_JSONBIN_API_KEY' | 'EXPO_PUBLIC_JSONBIN_BIN_ID'): string {
-  // Metro inlines EXPO_PUBLIC_* at export time. Prefer app.config `extra` when present —
-  // Expo dotenv can expand `$` inside JSONBin keys that look like `$2a$...`.
-  const value = process.env[name];
-  return typeof value === 'string' ? value.trim() : '';
-}
-
 export function getJsonBinConfig(): JsonBinConfig {
-  const apiKey = readExtraString('jsonbinApiKey') || readPublicEnv('EXPO_PUBLIC_JSONBIN_API_KEY');
-  const binId = readExtraString('jsonbinBinId') || readPublicEnv('EXPO_PUBLIC_JSONBIN_BIN_ID');
+  // Prefer app.config `extra` (literal .env read, no `$` expansion).
+  // Fall back to static process.env.* so Metro can inline EXPO_PUBLIC_* at export time
+  // (dynamic process.env[name] is NOT replaced).
+  const apiKey =
+    readExtraString('jsonbinApiKey') ||
+    (typeof process.env.EXPO_PUBLIC_JSONBIN_API_KEY === 'string'
+      ? process.env.EXPO_PUBLIC_JSONBIN_API_KEY.trim()
+      : '');
+  const binId =
+    readExtraString('jsonbinBinId') ||
+    (typeof process.env.EXPO_PUBLIC_JSONBIN_BIN_ID === 'string'
+      ? process.env.EXPO_PUBLIC_JSONBIN_BIN_ID.trim()
+      : '');
 
   return { apiKey, binId };
 }
