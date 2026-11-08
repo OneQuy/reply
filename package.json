@@ -40,7 +40,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "v": "node scripts/bump-version.js"
+    "v": "node scripts/bump-version.js",
+    "export:web": "expo export --platform web",
+    "deploy:web": "expo export --platform web && eas deploy --prod --environment production"
   },
   "private": true
 }

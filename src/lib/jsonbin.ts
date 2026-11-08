@@ -16,10 +16,16 @@ function readExtraString(key: string): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function readPublicEnv(name: 'EXPO_PUBLIC_JSONBIN_API_KEY' | 'EXPO_PUBLIC_JSONBIN_BIN_ID'): string {
+  // Metro inlines EXPO_PUBLIC_* at export time. Prefer app.config `extra` when present —
+  // Expo dotenv can expand `$` inside JSONBin keys that look like `$2a$...`.
+  const value = process.env[name];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export function getJsonBinConfig(): JsonBinConfig {
-  // Prefer app.config `extra` — Expo/dotenv can expand `$` inside JSONBin keys that look like `$2a$...`.
-  const apiKey = readExtraString('jsonbinApiKey');
-  const binId = readExtraString('jsonbinBinId');
+  const apiKey = readExtraString('jsonbinApiKey') || readPublicEnv('EXPO_PUBLIC_JSONBIN_API_KEY');
+  const binId = readExtraString('jsonbinBinId') || readPublicEnv('EXPO_PUBLIC_JSONBIN_BIN_ID');
 
   return { apiKey, binId };
 }
@@ -50,7 +56,9 @@ async function readErrorMessage(response: Response): Promise<string> {
 export async function setLatestBackup(items: WordingItem[], settings: AppSettings): Promise<void> {
   const { apiKey, binId } = getJsonBinConfig();
   if (!apiKey || !binId) {
-    throw new Error('Add EXPO_PUBLIC_JSONBIN_API_KEY and EXPO_PUBLIC_JSONBIN_BIN_ID to .env');
+    throw new Error(
+      'JSONBin is not configured for this build. Set EXPO_PUBLIC_JSONBIN_API_KEY and EXPO_PUBLIC_JSONBIN_BIN_ID, then re-export/deploy.',
+    );
   }
 
   const response = await fetch(`${API_ROOT}/b/${encodeURIComponent(binId)}`, {
@@ -71,7 +79,9 @@ export async function setLatestBackup(items: WordingItem[], settings: AppSetting
 export async function fetchLatestBackup(): Promise<AppBackup> {
   const { apiKey, binId } = getJsonBinConfig();
   if (!apiKey || !binId) {
-    throw new Error('Add EXPO_PUBLIC_JSONBIN_API_KEY and EXPO_PUBLIC_JSONBIN_BIN_ID to .env');
+    throw new Error(
+      'JSONBin is not configured for this build. Set EXPO_PUBLIC_JSONBIN_API_KEY and EXPO_PUBLIC_JSONBIN_BIN_ID, then re-export/deploy.',
+    );
   }
 
   const response = await fetch(`${API_ROOT}/b/${encodeURIComponent(binId)}/latest`, {
