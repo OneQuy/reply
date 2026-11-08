@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +23,7 @@ import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
 import { useTheme } from '@/hooks/use-theme';
 import { showAlert } from '@/lib/alert';
 import { parseBackup, serializeBackup } from '@/lib/backup';
+import { fetchLatestBackup, setLatestBackup } from '@/lib/jsonbin';
 import { parseCostWarnAt, parseFlashSeconds, parseRequestTimeoutSeconds } from '@/lib/storage';
 import { DEFAULT_SETTINGS, RANDOM_MODEL, type AppTheme } from '@/types/app';
 
@@ -57,6 +59,9 @@ export default function SettingScreen() {
   const [tab, setTab] = useState<'general' | 'reply'>('general');
   const [exportCopied, setExportCopied] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [syncBusy, setSyncBusy] = useState<'set' | 'sync' | null>(null);
+  const [setLatestDone, setSetLatestDone] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
   const replyTags = settings.replyTags ?? [];
   const defaultReplyPrompt = settings.replyPrompt ?? DEFAULT_SETTINGS.replyPrompt;
   const themeOptions: { value: AppTheme; label: string }[] = [
@@ -191,6 +196,42 @@ export default function SettingScreen() {
       setImportOpen(false);
     } catch {
       showAlert('Invalid JSON');
+    }
+  };
+
+  const handleSetLatest = async () => {
+    if (syncBusy) return;
+    setSyncBusy('set');
+    try {
+      await setLatestBackup(items, settings);
+      setSetLatestDone(true);
+      setTimeout(() => setSetLatestDone(false), 1600);
+    } catch (error) {
+      showAlert(error instanceof Error ? error.message : 'Failed to set latest');
+    } finally {
+      setSyncBusy(null);
+    }
+  };
+
+  const handleSync = async () => {
+    if (syncBusy) return;
+    setSyncBusy('sync');
+    try {
+      const backup = await fetchLatestBackup();
+      replaceData(backup.items, backup.settings);
+      applyImportedState(
+        backup.settings.prompt,
+        backup.settings.replyPrompt,
+        backup.settings.flashSeconds,
+        backup.settings.costWarnAt ?? DEFAULT_SETTINGS.costWarnAt,
+        backup.settings.requestTimeoutSeconds ?? DEFAULT_SETTINGS.requestTimeoutSeconds,
+      );
+      setSyncDone(true);
+      setTimeout(() => setSyncDone(false), 1600);
+    } catch (error) {
+      showAlert(error instanceof Error ? error.message : 'Failed to sync');
+    } finally {
+      setSyncBusy(null);
     }
   };
 
@@ -492,6 +533,42 @@ export default function SettingScreen() {
                     <ThemedText>Import</ThemedText>
                   </Pressable>
                 </View>
+                <View style={styles.addRow}>
+                  <Pressable
+                    onPress={() => void handleSetLatest()}
+                    disabled={syncBusy !== null}
+                    style={({ pressed }) => [
+                      styles.dataButton,
+                      { backgroundColor: theme.backgroundElement },
+                      pressed && !syncBusy && styles.pressed,
+                      syncBusy !== null && styles.disabled,
+                    ]}>
+                    {syncBusy === 'set' ? (
+                      <ActivityIndicator color={theme.text} />
+                    ) : (
+                      <ThemedText style={setLatestDone ? styles.savedLabel : undefined}>
+                        {setLatestDone ? 'Saved' : 'Set latest'}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => void handleSync()}
+                    disabled={syncBusy !== null}
+                    style={({ pressed }) => [
+                      styles.dataButton,
+                      { backgroundColor: theme.backgroundElement },
+                      pressed && !syncBusy && styles.pressed,
+                      syncBusy !== null && styles.disabled,
+                    ]}>
+                    {syncBusy === 'sync' ? (
+                      <ActivityIndicator color={theme.text} />
+                    ) : (
+                      <ThemedText style={syncDone ? styles.savedLabel : undefined}>
+                        {syncDone ? 'Synced' : 'Sync'}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                </View>
               </View>
 
               <Pressable
@@ -774,5 +851,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });
