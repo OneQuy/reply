@@ -13,6 +13,7 @@ import { FloatingTabInset, Spacing } from '@/constants/theme';
 import { useAppState } from '@/context/app-state';
 import { useContentWidth } from '@/hooks/use-content-width';
 import { useTabScrollToTop } from '@/hooks/use-tab-scroll-to-top';
+import { useTheme } from '@/hooks/use-theme';
 
 const COLUMNS = 2;
 const GRID_PADDING = Spacing.three;
@@ -24,6 +25,7 @@ type EditorState =
   | { mode: 'edit'; id: string; text: string };
 
 export default function WordingScreen() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const scrollRef = useTabScrollToTop();
   const width = useContentWidth();
@@ -129,20 +131,8 @@ export default function WordingScreen() {
 
         <View
           pointerEvents="box-none"
-          style={[styles.bottomOverlay, { paddingBottom: addBarPaddingBottom }]}
+          style={styles.bottomOverlay}
           onLayout={(event) => setBottomOverlayHeight(event.nativeEvent.layout.height)}>
-          {allTags.length > 0 ? (
-            <View style={styles.filterBar}>
-              {allTags.map((tag) => (
-                <TagPill
-                  key={tag}
-                  label={tag}
-                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                  onPress={() => setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))}
-                />
-              ))}
-            </View>
-          ) : null}
           <View style={styles.addBar} pointerEvents="box-none">
             <View style={styles.costSlot} pointerEvents="box-none">
               <LastRequestCost />
@@ -152,6 +142,29 @@ export default function WordingScreen() {
               style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
               <Ionicons name="add" size={20} color="#ffffff" />
             </Pressable>
+          </View>
+          <View
+            style={[
+              styles.tagsFooter,
+              {
+                backgroundColor: theme.background,
+                paddingBottom: addBarPaddingBottom,
+              },
+            ]}>
+            {allTags.length > 0 ? (
+              <View style={styles.filterBar}>
+                {allTags.map((tag) => (
+                  <TagPill
+                    key={tag}
+                    label={tag}
+                    selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                    onPress={() =>
+                      setSelectedTag((current) => (current?.toLowerCase() === tag.toLowerCase() ? null : tag))
+                    }
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -173,7 +186,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.one,
-    paddingBottom: Spacing.one,
   },
   gridArea: {
     flex: 1,
@@ -199,14 +211,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: GRID_PADDING,
-    paddingTop: Spacing.two,
-    gap: Spacing.one,
   },
   addBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    paddingHorizontal: GRID_PADDING,
+    paddingBottom: Spacing.one,
+  },
+  tagsFooter: {
+    paddingHorizontal: GRID_PADDING,
+    paddingTop: Spacing.one,
   },
   costSlot: {
     flex: 1,

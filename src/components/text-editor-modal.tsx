@@ -6,12 +6,14 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ClipboardPasteControl } from '@/components/clipboard-paste-control';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type TextEditorModalProps = {
@@ -36,7 +38,11 @@ export function TextEditorModal({
   onSave,
 }: TextEditorModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [value, setValue] = useState(initialValue);
+  const maxCardHeight = Math.max(240, height - insets.top - insets.bottom - Spacing.four * 2);
+  const maxInputHeight = Math.max(120, maxCardHeight - 140);
 
   useEffect(() => {
     if (visible) {
@@ -50,7 +56,7 @@ export function TextEditorModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.card, { backgroundColor: theme.background }]}>
+        <View style={[styles.card, { backgroundColor: theme.background, maxHeight: maxCardHeight }]}>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <TextInput
             value={value}
@@ -59,12 +65,14 @@ export function TextEditorModal({
             placeholderTextColor={theme.textSecondary}
             multiline
             autoFocus
+            scrollEnabled
             textAlignVertical="top"
             style={[
               styles.input,
               {
                 color: theme.text,
                 backgroundColor: theme.backgroundElement,
+                maxHeight: maxInputHeight,
               },
             ]}
           />
@@ -109,6 +117,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   card: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     borderRadius: 16,
     padding: Spacing.three,
     gap: Spacing.three,
@@ -119,6 +130,7 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 120,
+    flexShrink: 1,
     borderRadius: 12,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
